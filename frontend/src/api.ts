@@ -9,10 +9,7 @@ export async function fetchDevices(): Promise<Device[]> {
   return res.json();
 }
 
-export async function patchDevice(
-  id: string,
-  state: Partial<DeviceState>,
-): Promise<Device> {
+export async function patchDevice(id: string, state: Partial<DeviceState>): Promise<Device> {
   const res = await fetch(`${API_BASE}/api/devices/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
