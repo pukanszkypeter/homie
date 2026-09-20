@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -26,14 +26,14 @@ class DeviceRegistry:
     """
 
     def __init__(self) -> None:
-        self._devices: Dict[str, Device] = {}
-        self._subscribers: List[WebSocket] = []
+        self._devices: dict[str, Device] = {}
+        self._subscribers: list[WebSocket] = []
         self._lock = asyncio.Lock()
 
-    def seed(self, devices: List[Device]) -> None:
+    def seed(self, devices: list[Device]) -> None:
         self._devices = {d.id: d for d in devices}
 
-    def get_all(self) -> List[Device]:
+    def get_all(self) -> list[Device]:
         return list(self._devices.values())
 
     def get(self, device_id: str) -> Device:
@@ -42,7 +42,7 @@ class DeviceRegistry:
         except KeyError:
             raise UnknownDeviceError(device_id) from None
 
-    async def update_state(self, device_id: str, partial_state: Dict[str, Any]) -> Device:
+    async def update_state(self, device_id: str, partial_state: dict[str, Any]) -> Device:
         """Apply a client-requested partial update, validating allowed keys."""
         device = self.get(device_id)
         allowed = WRITABLE_STATE_KEYS[device.type]
@@ -53,11 +53,11 @@ class DeviceRegistry:
             )
         return await self._apply_state(device_id, partial_state)
 
-    async def set_full_state(self, device_id: str, partial_state: Dict[str, Any]) -> Device:
+    async def set_full_state(self, device_id: str, partial_state: dict[str, Any]) -> Device:
         """Apply a state update from the simulator/integration side (no key restrictions)."""
         return await self._apply_state(device_id, partial_state)
 
-    async def _apply_state(self, device_id: str, partial_state: Dict[str, Any]) -> Device:
+    async def _apply_state(self, device_id: str, partial_state: dict[str, Any]) -> Device:
         async with self._lock:
             device = self.get(device_id)
             updated = device.model_copy(update={"state": {**device.state, **partial_state}})
@@ -75,7 +75,7 @@ class DeviceRegistry:
 
     async def _broadcast(self, device: Device) -> None:
         message = {"type": "device_update", "device": device.model_dump()}
-        stale: List[WebSocket] = []
+        stale: list[WebSocket] = []
         for ws in self._subscribers:
             try:
                 await ws.send_json(message)

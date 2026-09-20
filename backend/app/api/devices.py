@@ -18,7 +18,7 @@ async def get_device(device_id: str, request: Request) -> Device:
     try:
         return request.app.state.registry.get(device_id)
     except UnknownDeviceError:
-        raise HTTPException(status_code=404, detail=f"Unknown device: {device_id}")
+        raise HTTPException(status_code=404, detail=f"Unknown device: {device_id}") from None
 
 
 @router.patch("/{device_id}", response_model=Device)
@@ -27,6 +27,6 @@ async def update_device(device_id: str, update: DeviceUpdate, request: Request) 
     try:
         return await registry.update_state(device_id, update.state)
     except UnknownDeviceError:
-        raise HTTPException(status_code=404, detail=f"Unknown device: {device_id}")
+        raise HTTPException(status_code=404, detail=f"Unknown device: {device_id}") from None
     except InvalidStateKeyError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
