@@ -1,0 +1,25 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.greeting {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.date {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.time {
+  font-size: var(--font-size-display);
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}

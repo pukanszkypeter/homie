@@ -1,12 +1,12 @@
 # 🖥️ Homie frontend
 
-React + TypeScript + Vite dashboard for the Homie smart-home backend.
-Fetches the device list once over REST, then keeps it live over a
-WebSocket, rendering devices as room-grouped cards with type-specific
-controls.
+React + TypeScript + Vite dashboard for the Homie backend. A dark,
+touch-friendly app shell (icon rail on tablet/desktop, bottom bar on phones)
+with a Home overview and separate screens for Devices, Todos and Stats.
+Devices load once over REST, then stay live over a WebSocket.
 
 Meant to eventually run fullscreen in a tablet's browser (kiosk mode)
-mounted on a wall; runs as a normal web app in dev.
+mounted on a wall; also usable from a phone or desktop browser.
 
 ## 🔧 Setup
 
@@ -34,20 +34,32 @@ WebSocket URL are hardcoded in [src/api.ts](src/api.ts).
 
 ## 🗂️ Structure
 
-- `src/api.ts` - REST calls (`fetchDevices`, `patchDevice`) and the
-  WebSocket connection (`connectDeviceStream`), including auto-reconnect.
-- `src/hooks/useDevices.ts` - loads the initial device list, applies live
-  WebSocket updates, and exposes `updateDevice` for optimistic-free
-  PATCH-then-reconcile writes.
-- `src/types.ts` - shared `Device` / `DeviceState` types, mirroring the
-  backend's Pydantic models.
-- `src/components/DeviceCard.tsx` - renders a single device with
-  type-specific controls (on/off + brightness for lights, on/off for
-  outlets, read-only for sensors).
-- `src/App.tsx` - top-level layout, groups devices by room.
+Imports use the `@/` alias for `src/` (e.g. `@/components/Widget/Widget`).
+Components and pages keep their code and their scoped CSS Module together in
+one folder.
+
+- `src/main.tsx`, `src/App.tsx`, `src/router.tsx` - entry point, root, and the
+  route table (`/`, `/devices`, `/todos`, `/stats`; unknown paths redirect Home).
+- `src/styles/` - `tokens.css` (colors, spacing, sizes, touch-target size -
+  the single place to change the theme) and `global.css` (reset and base).
+- `src/layouts/AppShell/` - the frame around every screen: nav area plus the
+  content outlet. Switches to a bottom bar under 768px wide.
+- `src/components/` - reusable pieces: `NavRail` (rail on wide areas, bar on
+  narrow ones; nav entries live in `navItems.ts`), `Widget` (Home card),
+  `PageHeader`, `ComingSoon`, and `DeviceCard` (one file per control type).
+- `src/pages/` - one folder per screen: `HomePage` (greeting, clock, widget
+  grid), `DevicesPage` (rooms and device cards), `TodosPage` and `StatsPage`
+  (placeholders).
+- `src/hooks/` - `useDevices` (initial load, live WebSocket updates,
+  PATCH-then-reconcile writes) and `useClock`.
+- `src/api.ts` - REST calls and the WebSocket connection, with auto-reconnect.
+- `src/types.ts` - `Device` / `DeviceState` types, mirroring the backend's
+  Pydantic models.
 
 ## 📋 Not built yet
 
+- Real content for the Home widgets and the Todos/Stats screens (weather,
+  todos, budget); the Lilly voice button in the nav is a disabled placeholder.
 - Kiosk-mode styling/behavior for the wall tablet (fullscreen lockdown,
   disabling text selection, hiding the cursor, screen-always-on).
 - Auth (none yet - fine for a LAN-only prototype).

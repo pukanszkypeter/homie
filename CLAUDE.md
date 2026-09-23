@@ -36,6 +36,12 @@ cd frontend && npm run dev
 - New domains (todos, budget, voice) get their own router in `backend/app/api/`
   and their own module beside `devices/`.
 - `frontend/src/types.ts` mirrors the backend Pydantic models; update both together.
+- Frontend layout: `layouts/` (app shell), `pages/` (one folder per screen),
+  `components/` (reusable), `hooks/`, `styles/tokens.css` (theme). One folder per
+  component/page with its own CSS Module; import via the `@/` alias. A new screen
+  = a page folder + a route in `router.tsx` + an entry in `components/NavRail/navItems.ts`.
+- UI targets a wall tablet first (dark, glanceable, 64px touch targets) but must
+  stay usable on phone/desktop; use theme tokens instead of hardcoded values.
 - Commits: clear, present-tense messages. No semver, changelog, or GitHub Projects
   board - deliberately skipped. Don't commit unless asked.
 
