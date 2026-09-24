@@ -17,10 +17,14 @@ browser (kiosk mode) mounted on a wall.
   integration later (MQTT, Zigbee, Home Assistant, direct vendor APIs) means
   writing something else that calls into the registry - the API and
   frontend don't need to change.
+  Weather comes from Open-Meteo (free, no API key): the backend refreshes it
+  every 15 minutes for the places in `backend/locations.json` and serves the
+  cached result to every client.
 - `frontend/` - React + TypeScript + Vite. Fetches the device list once,
   then keeps it live over the WebSocket. Devices are grouped by room and
   rendered as cards with type-specific controls (on/off + brightness for
-  lights, on/off for outlets, read-only for sensors).
+  lights, on/off for outlets, read-only for sensors). Home shows a greeting,
+  clock and a weather card with a switch between the configured cities.
 
 ## 🚀 Running it
 
@@ -46,7 +50,12 @@ load data (CORS is currently locked to `localhost:8000`).
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+cp locations.example.json locations.json   # then edit: your places for the weather card
 ```
+
+`locations.json` is gitignored on purpose (your home location is personal
+data); the first entry is the home city. Without it the app still runs, the
+weather card just shows "Weather not available".
 
 ## 🧪 Current mock devices
 

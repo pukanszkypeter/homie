@@ -7,9 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.devices import router as devices_router
+from .api.weather import router as weather_router
 from .api.ws import router as ws_router
 from .devices.mock import run_simulator, seed_devices
 from .devices.registry import DeviceRegistry
+from .weather.locations import load_locations
+from .weather.service import WeatherService, run_weather_refresher
 
 
 @asynccontextmanager
@@ -18,9 +21,15 @@ async def lifespan(app: FastAPI):
     registry.seed(seed_devices())
     app.state.registry = registry
 
-    simulator_task = asyncio.create_task(run_simulator(registry))
+    weather = WeatherService(load_locations())
+    app.state.weather = weather
+
+    tasks = [asyncio.create_task(run_simulator(registry))]
+    if weather.locations:
+        tasks.append(asyncio.create_task(run_weather_refresher(weather)))
     yield
-    simulator_task.cancel()
+    for task in tasks:
+        task.cancel()
 
 
 app = FastAPI(title="Homie API", lifespan=lifespan)
@@ -33,6 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(devices_router)
+app.include_router(weather_router)
 app.include_router(ws_router)
 
 

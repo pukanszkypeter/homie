@@ -46,20 +46,24 @@ one folder.
   content outlet. Switches to a bottom bar under 768px wide.
 - `src/components/` - reusable pieces: `NavRail` (rail on wide areas, bar on
   narrow ones; nav entries live in `navItems.ts`), `Widget` (Home card),
-  `PageHeader`, `ComingSoon`, and `DeviceCard` (one file per control type).
+  `PageHeader`, `ComingSoon`, `DeviceCard` (one file per control type) and
+  `WeatherCard` (city switcher, current conditions, 3-day forecast; WMO weather
+  codes are mapped to labels/icons in `weatherCodes.ts`).
 - `src/pages/` - one folder per screen: `HomePage` (greeting, clock, widget
   grid), `DevicesPage` (rooms and device cards), `TodosPage` and `StatsPage`
   (placeholders).
 - `src/hooks/` - `useDevices` (initial load, live WebSocket updates,
-  PATCH-then-reconcile writes) and `useClock`.
+  PATCH-then-reconcile writes), `useWeather` (polls every 5 minutes, every 10
+  seconds until the backend has data) and `useClock`.
+- `src/utils/` - small shared helpers (`formatTime`, 24h).
 - `src/api.ts` - REST calls and the WebSocket connection, with auto-reconnect.
 - `src/types.ts` - `Device` / `DeviceState` types, mirroring the backend's
   Pydantic models.
 
 ## 📋 Not built yet
 
-- Real content for the Home widgets and the Todos/Stats screens (weather,
-  todos, budget); the Lilly voice button in the nav is a disabled placeholder.
+- Real content for the Devices, Todos and Budget widgets and the Todos/Stats
+  screens; the Lilly voice button in the nav is a disabled placeholder.
 - Kiosk-mode styling/behavior for the wall tablet (fullscreen lockdown,
   disabling text selection, hiding the cursor, screen-always-on).
 - Auth (none yet - fine for a LAN-only prototype).

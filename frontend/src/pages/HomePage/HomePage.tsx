@@ -1,5 +1,6 @@
 import { ChartColumn, CloudSun, Lightbulb, ListChecks } from "lucide-react";
 import { ComingSoon } from "@/components/ComingSoon/ComingSoon";
+import { WeatherCard } from "@/components/WeatherCard/WeatherCard";
 import { Widget } from "@/components/Widget/Widget";
 import { GreetingHeader } from "./GreetingHeader";
 import styles from "./HomePage.module.css";
@@ -10,7 +11,7 @@ export function HomePage() {
       <GreetingHeader />
       <div className={styles.grid}>
         <Widget title="Weather" icon={CloudSun}>
-          <ComingSoon />
+          <WeatherCard />
         </Widget>
         <Widget title="Devices" icon={Lightbulb} to="/devices">
           <ComingSoon />

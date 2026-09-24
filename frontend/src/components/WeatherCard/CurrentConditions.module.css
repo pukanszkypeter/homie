@@ -1,0 +1,39 @@
+.current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.icon {
+  color: var(--color-text-secondary);
+}
+
+.temperature {
+  font-size: var(--font-size-display);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.label {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.details {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 0 auto;
+  font-size: var(--font-size-md);
+}
+
+.details dt {
+  color: var(--color-text-muted);
+}
+
+.details dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

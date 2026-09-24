@@ -1,7 +1,13 @@
-import type { Device, DeviceState } from "./types";
+import type { Device, DeviceState, WeatherResponse } from "./types";
 
 const API_BASE = "http://localhost:8001";
 const WS_URL = "ws://localhost:8001/ws";
+
+export async function fetchWeather(): Promise<WeatherResponse> {
+  const res = await fetch(`${API_BASE}/api/weather`);
+  if (!res.ok) throw new Error(`Failed to fetch weather: ${res.status}`);
+  return res.json();
+}
 
 export async function fetchDevices(): Promise<Device[]> {
   const res = await fetch(`${API_BASE}/api/devices`);

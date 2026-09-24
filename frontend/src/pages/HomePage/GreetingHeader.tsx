@@ -1,12 +1,8 @@
 import { useClock } from "@/hooks/useClock";
+import { formatTime } from "@/utils/formatTime";
 import { getGreeting } from "./greeting";
 import styles from "./GreetingHeader.module.css";
 
-const timeFormat = new Intl.DateTimeFormat([], {
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
 const dateFormat = new Intl.DateTimeFormat([], {
   weekday: "long",
   month: "long",
@@ -23,7 +19,7 @@ export function GreetingHeader() {
         <p className={styles.date}>{dateFormat.format(now)}</p>
       </div>
       <time className={styles.time} dateTime={now.toISOString()}>
-        {timeFormat.format(now)}
+        {formatTime(now)}
       </time>
     </header>
   );

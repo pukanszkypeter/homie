@@ -50,8 +50,11 @@ cd frontend && npm run dev
 The GitHub repo is **public** (used as a resume reference). Never commit real
 secrets or real personal data (tokens, actual budget numbers, real todo items).
 Use synthetic data in the repo. There is no `.env` yet; when the first real
-credential arrives (Graph tokens, weather API key), set up a gitignored `.env`
-*before* it touches the code.
+credential arrives (Graph tokens, an API key), set up a gitignored `.env`
+*before* it touches the code. Personal config follows the same rule: the weather
+places live in the gitignored `backend/locations.json` (home location is personal),
+with a committed `locations.example.json`. Never put the user's real home location or
+travel places in committed files, docs, or examples.
 
 ## 🔜 Open decisions / known gaps
 
@@ -59,8 +62,9 @@ credential arrives (Graph tokens, weather API key), set up a gitignored `.env`
   weaker tool-calling) vs a cloud API (more reliable, leaves the LAN). Undecided.
 - No persistence yet (device state resets on restart) - SQLite is the likely fit
   once budget/todo data exists.
-- No scheduler yet (greeting, weather refresh); the existing asyncio-task-in-lifespan
-  pattern (the mock simulator) is the model to follow.
+- No general scheduler; background work is an asyncio task started in the lifespan
+  (the mock simulator, and the weather refresher in `app/weather/service.py`).
+  Follow that pattern until something needs real scheduling.
 - No tests yet; add them when real logic lands (registry write validation,
   Graph/budget code).
 - No auth; fine for LAN-only, not once cloud tokens are involved.
