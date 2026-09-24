@@ -1,0 +1,9 @@
+.message {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  color: var(--color-text-muted);
+  text-align: center;
+}

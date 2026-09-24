@@ -58,3 +58,26 @@ export interface WeatherResponse {
   updated_at: string | null;
   locations: LocationWeather[];
 }
+
+export type TodosStatus = "not_configured" | "loading" | "sign_in_required" | "ok" | "unavailable";
+
+export interface TodoTask {
+  id: string;
+  title: string;
+  is_completed: boolean;
+  due_date: string | null;
+  is_recurring: boolean;
+}
+
+export interface TodoList {
+  id: string;
+  name: string;
+  is_shared: boolean;
+  tasks: TodoTask[];
+}
+
+export interface TodosResponse {
+  status: TodosStatus;
+  updated_at: string | null;
+  lists: TodoList[];
+}

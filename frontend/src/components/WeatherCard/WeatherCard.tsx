@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { ChipGroup } from "@/components/ChipGroup/ChipGroup";
 import { useWeather } from "@/hooks/useWeather";
 import { formatTime } from "@/utils/formatTime";
 import { CurrentConditions } from "./CurrentConditions";
 import { ForecastRow } from "./ForecastRow";
-import { LocationSwitcher } from "./LocationSwitcher";
 import styles from "./WeatherCard.module.css";
 
 export function WeatherCard() {
@@ -19,8 +19,9 @@ export function WeatherCard() {
 
   return (
     <div className={styles.card}>
-      <LocationSwitcher
-        names={data.locations.map((l) => l.name)}
+      <ChipGroup
+        label="Location"
+        options={data.locations.map((l) => ({ value: l.name, label: l.name }))}
         selected={active.name}
         onSelect={setSelected}
       />

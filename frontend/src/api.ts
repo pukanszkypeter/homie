@@ -1,7 +1,49 @@
-import type { Device, DeviceState, WeatherResponse } from "./types";
+import type { Device, DeviceState, TodosResponse, TodoTask, WeatherResponse } from "./types";
 
 const API_BASE = "http://localhost:8001";
 const WS_URL = "ws://localhost:8001/ws";
+
+async function failureMessage(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => ({}));
+  return body.detail ?? `${fallback}: ${res.status}`;
+}
+
+export async function fetchTodos(): Promise<TodosResponse> {
+  const res = await fetch(`${API_BASE}/api/todos`);
+  if (!res.ok) throw new Error(await failureMessage(res, "Failed to fetch todos"));
+  return res.json();
+}
+
+export async function addTodoTask(listId: string, title: string): Promise<TodoTask> {
+  const res = await fetch(`${API_BASE}/api/todos/lists/${encodeURIComponent(listId)}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error(await failureMessage(res, "Failed to add task"));
+  return res.json();
+}
+
+export async function completeTodoTask(listId: string, taskId: string): Promise<TodoTask> {
+  const res = await fetch(
+    `${API_BASE}/api/todos/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_completed: true }),
+    },
+  );
+  if (!res.ok) throw new Error(await failureMessage(res, "Failed to complete task"));
+  return res.json();
+}
+
+export async function deleteTodoTask(listId: string, taskId: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/api/todos/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw new Error(await failureMessage(res, "Failed to delete task"));
+}
 
 export async function fetchWeather(): Promise<WeatherResponse> {
   const res = await fetch(`${API_BASE}/api/weather`);

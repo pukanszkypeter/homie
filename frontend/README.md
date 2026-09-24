@@ -47,23 +47,29 @@ one folder.
 - `src/components/` - reusable pieces: `NavRail` (rail on wide areas, bar on
   narrow ones; nav entries live in `navItems.ts`), `Widget` (Home card),
   `PageHeader`, `ComingSoon`, `DeviceCard` (one file per control type) and
+  `ChipGroup` (the pill switcher used for cities and todo lists), `TodoCard`
+  (Home widget), `TaskRow` (shows the due date, red when overdue, and a repeat
+  icon for recurring tasks) and `TodoStatusMessage`, and
   `WeatherCard` (city switcher, current conditions, 3-day forecast; WMO weather
   codes are mapped to labels/icons in `weatherCodes.ts`).
 - `src/pages/` - one folder per screen: `HomePage` (greeting, clock, widget
-  grid), `DevicesPage` (rooms and device cards), `TodosPage` and `StatsPage`
-  (placeholders).
+  grid), `DevicesPage` (rooms and device cards), `TodosPage` (list switcher, add,
+  complete, delete with confirmation) and `StatsPage` (placeholder).
 - `src/hooks/` - `useDevices` (initial load, live WebSocket updates,
-  PATCH-then-reconcile writes), `useWeather` (polls every 5 minutes, every 10
+  PATCH-then-reconcile writes), `useTodos` (polls every 30 seconds; complete/delete update the screen
+  instantly and roll back on failure; a completed recurring task is put straight back
+  with its next due date), `useWeather` (polls every 5 minutes, every 10
   seconds until the backend has data) and `useClock`.
-- `src/utils/` - small shared helpers (`formatTime`, 24h).
+- `src/utils/` - small shared helpers (`formatTime` in 24h, `formatDue` for
+  "Today" / "Tomorrow" / dates).
 - `src/api.ts` - REST calls and the WebSocket connection, with auto-reconnect.
 - `src/types.ts` - `Device` / `DeviceState` types, mirroring the backend's
   Pydantic models.
 
 ## 📋 Not built yet
 
-- Real content for the Devices, Todos and Budget widgets and the Todos/Stats
-  screens; the Lilly voice button in the nav is a disabled placeholder.
+- Real content for the Devices and Budget widgets and the Stats screen; the
+  Lilly voice button in the nav is a disabled placeholder.
 - Kiosk-mode styling/behavior for the wall tablet (fullscreen lockdown,
   disabling text selection, hiding the cursor, screen-always-on).
 - Auth (none yet - fine for a LAN-only prototype).

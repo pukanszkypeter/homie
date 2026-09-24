@@ -68,9 +68,8 @@ randomly every few seconds to simulate live data.
 - Real device integrations (protocol choice - MQTT/Zigbee/Home Assistant/
   vendor APIs - deliberately deferred; the registry abstraction is there so
   this is additive, not a rewrite).
-- Cloud service integrations (Microsoft Graph: OneDrive files, To Do,
-  budget/stats views) - planned as a separate module alongside `devices/`,
-  not started.
+- More Microsoft Graph integrations (OneDrive files, budget/stats views) - the
+  To Do integration (`backend/app/todos/`) is the model for these.
 - Kiosk-mode styling/behavior for the tablet (fullscreen lockdown, disabling
   text selection, hiding the cursor, screen-always-on).
 - Persistence - device state resets to the seed data on backend restart.

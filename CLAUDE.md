@@ -40,6 +40,29 @@ cd frontend && npm run dev
   `components/` (reusable), `hooks/`, `styles/tokens.css` (theme). One folder per
   component/page with its own CSS Module; import via the `@/` alias. A new screen
   = a page folder + a route in `router.tsx` + an entry in `components/NavRail/navItems.ts`.
+- Todo privacy: only lists named in `MS_TODO_LISTS` (in the gitignored `.env`) are
+  fetched; the rest of the user's lists never leave Microsoft. Keep that allowlist
+  in the fetch path, don't filter after fetching. The one exception is the opt-in
+  cleanup (`MS_TODO_CLEANUP_DAYS`, `app/todos/cleanup.py`), which reads only ids and
+  completion times of all lists, never titles, and is off unless the user enables it.
+  Never run it with `--delete` (or enable it) without the user's explicit go-ahead.
+- Todos: Microsoft To Do is the source of truth (accessible everywhere, shared lists
+  with other people); Homie is a wall view plus quick add/complete/delete, not a
+  replacement. The backend caches open tasks only and validates list/task ids against
+  that cache (Graph returns 400 for unknown list ids and silently succeeds for some
+  unknown task ids, so it can't be trusted for 404s).
+- Recurring tasks: completing one does NOT create a new task. Microsoft advances the
+  same task (same id) in place, reopened with the next due date, and stores the finished
+  occurrence as a separate completed task. Trust the PATCH reply's status/due date, not
+  the fact that we asked for "completed". Deleting only completed instances is safe.
+- Due dates: Graph returns them in UTC as the user's local midnight, so always convert
+  to the `TIMEZONE` setting (default: the machine's) before taking the date. Don't slice
+  the string. Test date logic with values around midnight and DST changes.
+- **Never run mutating requests against the user's real data except scratch tasks you
+  create yourself** (title them "Homie ..." and delete them right after), on a
+  non-shared list. Don't derive ids by editing real ones (that once produced an id
+  identical to a real task's). Don't print the user's real task titles into the session;
+  use counts. Verify with a scan that no scratch tasks are left behind.
 - UI targets a wall tablet first (dark, glanceable, 64px touch targets) but must
   stay usable on phone/desktop; use theme tokens instead of hardcoded values.
 - Commits: clear, present-tense messages. No semver, changelog, or GitHub Projects
@@ -49,12 +72,16 @@ cd frontend && npm run dev
 
 The GitHub repo is **public** (used as a resume reference). Never commit real
 secrets or real personal data (tokens, actual budget numbers, real todo items).
-Use synthetic data in the repo. There is no `.env` yet; when the first real
-credential arrives (Graph tokens, an API key), set up a gitignored `.env`
-*before* it touches the code. Personal config follows the same rule: the weather
+Use synthetic data in the repo. Real credentials go in the gitignored `backend/.env`,
+never in code. Personal config follows the same rule: the weather
 places live in the gitignored `backend/locations.json` (home location is personal),
 with a committed `locations.example.json`. Never put the user's real home location or
-travel places in committed files, docs, or examples.
+travel places in committed files, docs, or examples. The same goes for their real
+todo list names/tasks.
+
+Secrets live in `backend/.env` (read by `app/config.py`) and the Microsoft sign-in
+cache `backend/.msal_token_cache.json` (holds refresh tokens - a secret, owner-only,
+gitignored). Setup is in `backend/README.md`.
 
 ## 🔜 Open decisions / known gaps
 
@@ -67,4 +94,7 @@ travel places in committed files, docs, or examples.
   Follow that pattern until something needs real scheduling.
 - No tests yet; add them when real logic lands (registry write validation,
   Graph/budget code).
-- No auth; fine for LAN-only, not once cloud tokens are involved.
+- No auth on the API, and it exposes the user's real todos. The server listens on
+  127.0.0.1 only; add the PIN gate (backend-verified, rate-limited) before binding to
+  the LAN or opening it from other devices. See the profiles/roles discussion: start
+  with one PIN, add per-user profiles only when someone needs separate data.
