@@ -11,11 +11,15 @@ const dateFormat = new Intl.DateTimeFormat([], {
 
 export function GreetingHeader() {
   const now = useClock();
+  const { text, Icon, tone } = getGreeting(now.getHours());
 
   return (
     <header className={styles.header}>
       <div>
-        <h1 className={styles.greeting}>{getGreeting(now.getHours())}</h1>
+        <h1 className={styles.greeting}>
+          <Icon className={`${styles.icon} ${styles[tone]}`} aria-hidden />
+          {text}
+        </h1>
         <p className={styles.date}>{dateFormat.format(now)}</p>
       </div>
       <time className={styles.time} dateTime={now.toISOString()}>

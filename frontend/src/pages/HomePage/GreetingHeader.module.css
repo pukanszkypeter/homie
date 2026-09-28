@@ -7,8 +7,27 @@
 }
 
 .greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-size-xl);
   font-weight: 600;
+  line-height: 1; /* without this the text's line box is taller than its glyphs, so
+    align-items: center visually centers the icon a little low */
+}
+
+.icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+}
+
+.day {
+  color: var(--color-accent);
+}
+
+.night {
+  color: var(--color-chart-blue);
 }
 
 .date {
