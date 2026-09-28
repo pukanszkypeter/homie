@@ -1,4 +1,18 @@
-import type { Device, DeviceState, TodosResponse, TodoTask, WeatherResponse } from "./types";
+import type {
+  CostCell,
+  CostColor,
+  CostEntryInput,
+  CostItem,
+  CostItemSeries,
+  CostSection,
+  CostSummary,
+  CostYear,
+  Device,
+  DeviceState,
+  TodosResponse,
+  TodoTask,
+  WeatherResponse,
+} from "./types";
 
 const API_BASE = "http://localhost:8001";
 const WS_URL = "ws://localhost:8001/ws";
@@ -7,6 +21,102 @@ async function failureMessage(res: Response, fallback: string): Promise<string> 
   const body = await res.json().catch(() => ({}));
   return body.detail ?? `${fallback}: ${res.status}`;
 }
+
+async function costsRequest<T>(path: string, fallback: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}/api/costs${path}`, {
+    ...init,
+    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+  });
+  if (!res.ok) throw new Error(await failureMessage(res, fallback));
+  return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+const jsonBody = (method: string, body: unknown): RequestInit => ({
+  method,
+  body: JSON.stringify(body),
+});
+
+export const fetchCostYear = (year: number) =>
+  costsRequest<CostYear>(`/years/${year}`, "Failed to fetch costs");
+
+export const fetchCostSummary = () =>
+  costsRequest<CostSummary>("/summary", "Failed to fetch cost summary");
+
+export const fetchCostItemSeries = (itemId: number) =>
+  costsRequest<CostItemSeries>(`/items/${itemId}/series`, "Failed to fetch item history");
+
+export const deleteCostYear = (year: number) =>
+  costsRequest<void>(`/years/${year}`, "Failed to delete year", { method: "DELETE" });
+
+export const updateCostSection = (
+  sectionId: number,
+  changes: { name?: string; color?: CostColor },
+) =>
+  costsRequest<CostSection>(
+    `/sections/${sectionId}`,
+    "Failed to update section",
+    jsonBody("PATCH", changes),
+  );
+
+export const updateCostItem = (itemId: number, changes: { name?: string; unit?: string | null }) =>
+  costsRequest<CostItem>(`/items/${itemId}`, "Failed to rename item", jsonBody("PATCH", changes));
+
+export const moveCostSection = (year: number, sectionId: number, direction: "up" | "down") =>
+  costsRequest<void>(
+    `/years/${year}/sections/${sectionId}/move`,
+    "Failed to move section",
+    jsonBody("POST", { direction }),
+  );
+
+export const moveCostItem = (year: number, itemId: number, direction: "up" | "down") =>
+  costsRequest<void>(
+    `/years/${year}/items/${itemId}/move`,
+    "Failed to move item",
+    jsonBody("POST", { direction }),
+  );
+
+export const addCostSection = (year: number, name: string) =>
+  costsRequest<CostSection>(
+    `/years/${year}/sections`,
+    "Failed to add section",
+    jsonBody("POST", { name }),
+  );
+
+export const deleteCostSection = (year: number, sectionId: number) =>
+  costsRequest<void>(`/years/${year}/sections/${sectionId}`, "Failed to remove section", {
+    method: "DELETE",
+  });
+
+export const addCostItem = (year: number, sectionId: number, name: string, unit: string | null) =>
+  costsRequest<CostItem>(
+    `/years/${year}/items`,
+    "Failed to add item",
+    jsonBody("POST", { section_id: sectionId, name, unit }),
+  );
+
+export const deleteCostItem = (year: number, itemId: number) =>
+  costsRequest<void>(`/years/${year}/items/${itemId}`, "Failed to remove item", {
+    method: "DELETE",
+  });
+
+export const copyCostStructure = (year: number, copyFrom: number) =>
+  costsRequest<void>(
+    `/years/${year}/structure`,
+    "Failed to copy",
+    jsonBody("POST", { copy_from: copyFrom }),
+  );
+
+export const saveCostEntry = (itemId: number, month: string, entry: CostEntryInput) =>
+  costsRequest<CostCell>(
+    `/items/${itemId}/entries/${month}`,
+    "Failed to save",
+    jsonBody("PUT", entry),
+  );
+
+export const deleteCostEntry = (itemId: number, month: string) =>
+  costsRequest<void>(`/items/${itemId}/entries/${month}`, "Failed to clear", {
+    method: "DELETE",
+  });
 
 export async function fetchTodos(): Promise<TodosResponse> {
   const res = await fetch(`${API_BASE}/api/todos`);

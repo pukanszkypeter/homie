@@ -1,0 +1,24 @@
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+}
+
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  color: var(--color-on-accent);
+  cursor: pointer;
+}
+
+/* A ring in the surface color plus one in the text color, so the choice reads on any swatch. */
+.selected {
+  outline: 2px solid var(--color-text);
+  outline-offset: 3px;
+}

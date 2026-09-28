@@ -1,0 +1,170 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tools {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.title {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table thead th {
+  padding: var(--space-2);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* The item names stay in view while the months scroll on a narrow screen. */
+.name {
+  position: sticky;
+  left: 0;
+  min-width: 112px;
+  background: var(--color-surface);
+  text-align: left !important;
+}
+
+.itemButton,
+.cell {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.itemButton {
+  flex: 1;
+  width: auto;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* The item's unit, next to its name only in Unit view (rows in a section can differ). */
+.unitTag {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.cell {
+  position: relative;
+  min-width: 56px;
+  text-align: right;
+}
+
+/* Marks a month that has a note, without taking space away from the amount itself. */
+.noteDot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.cell:hover {
+  background: var(--color-surface-raised);
+}
+
+.credit {
+  color: var(--color-success);
+}
+
+.sum {
+  padding: 0 var(--space-1) !important;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.table tfoot th,
+.table tfoot td {
+  border-top: 1px solid var(--color-surface-raised);
+  padding: var(--space-2);
+}
+
+/* Same divider as the Total row, so the totals read as a separate column. */
+.table .totalCol {
+  width: 1%; /* shrink to the numbers, so the divider has equal room on both sides */
+  border-left: 1px solid var(--color-surface-raised);
+  padding-left: var(--space-4) !important;
+}
+
+/* December gets as much room before the divider as the Total column has after it. */
+.table .beforeTotal {
+  padding-right: var(--space-4) !important;
+}
+
+/* Totals (the Total column and the Total row) read heavier than the entered amounts. */
+.table thead th.totalCol,
+.table tfoot th {
+  color: var(--color-text);
+  font-weight: 700;
+}

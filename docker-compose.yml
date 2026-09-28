@@ -1,0 +1,23 @@
+# Postgres for Homie's costs data (and later, device persistence - see CLAUDE.md).
+# Runs unchanged on the NAS later; only the host it's started on changes.
+services:
+  db:
+    image: postgres:16
+    container_name: homie-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: homie
+      POSTGRES_PASSWORD: homie
+      POSTGRES_DB: homie
+    ports:
+      - "127.0.0.1:5432:5432" # localhost only, matches the rest of Homie's LAN-only stance
+    volumes:
+      - homie-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homie -d homie"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  homie-db-data:

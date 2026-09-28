@@ -7,11 +7,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api.costs import router as costs_router
 from .api.devices import router as devices_router
 from .api.todos import router as todos_router
 from .api.weather import router as weather_router
 from .api.ws import router as ws_router
 from .config import TOKEN_CACHE_FILE, Settings
+from .costs.db import create_db_engine, migrate, session_factory
 from .devices.mock import run_simulator, seed_devices
 from .devices.registry import DeviceRegistry
 from .todos.auth import TokenProvider
@@ -27,6 +29,10 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = Settings()
+
+    engine = create_db_engine()
+    migrate(engine)
+    app.state.db_sessions = session_factory(engine)
 
     registry = DeviceRegistry()
     registry.seed(seed_devices())
@@ -61,6 +67,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
     if todo_client:
         await todo_client.aclose()
+    engine.dispose()
 
 
 app = FastAPI(title="Homie API", lifespan=lifespan)
@@ -72,6 +79,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(costs_router)
 app.include_router(devices_router)
 app.include_router(todos_router)
 app.include_router(weather_router)

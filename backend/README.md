@@ -19,6 +19,17 @@ Without it the app still runs and `/api/weather` returns no locations. Coordinat
 can be looked up with Open-Meteo's geocoding API
 (`https://geocoding-api.open-meteo.com/v1/search?name=<city>`).
 
+### 🗄️ Costs database (Postgres)
+
+`docker compose up -d` (from the repo root) starts a local Postgres container -
+schema and data persist in a Docker volume between restarts. The app connects to
+it with the URL in `Settings.database_url` (`app/config.py`), which already matches
+`docker-compose.yml`'s defaults, so nothing needs setting in `.env` for local dev.
+Point `DATABASE_URL` at a different Postgres instead (e.g. the NAS, once that's
+where it runs) by setting it there. The backend runs pending Alembic migrations
+itself on startup (`app/costs/db.py`); a new schema change is a new file in
+`migrations/versions/`.
+
 ### 📝 Microsoft To Do (optional)
 
 The todos come from your real Microsoft To Do (personal account) through the
@@ -99,6 +110,28 @@ Serves on http://localhost:8001. CORS is locked to `http://localhost:8000`
   configured location, plus when it was last refreshed. Coordinates are not
   included. Served from a cache refreshed every 15 minutes (retried every minute
   while failing, keeping the previous data meanwhile).
+- `/api/costs/...` - the monthly cost data. Sections and items are listed **per
+  year** (a subscription can exist in 2025 and be gone in 2026) but keep one identity
+  across years, so an item's history stays continuous. `GET /years/{year}` returns
+  that year's grid with section, month and year totals computed on the fly.
+  `POST /years/{year}/sections` and `/items` add to a year (an item may have a `unit`
+  such as `kWh`; re-adding an existing item in another year reuses it), and
+  `DELETE /years/{year}/sections/{id}` / `/items/{id}` remove them from that year only,
+  along with that year's months. `POST /years/{year}/structure` with `{"copy_from": Y}`
+  copies another year's sections and items (never the amounts). `POST /years/{year}/sections/{id}/move`
+  and `/items/{id}/move` with `{"direction": "up" | "down"}` swap a section or item with
+  its neighbor among what that year lists (the order is shared by all years). `DELETE
+  /years/{year}` removes everything in a year (permanent; other years are untouched).
+  `PATCH /sections/{id}` renames a section or changes its chart `color` (one of nine
+  palette keys, see `app/costs/colors.py`; new sections get the least-used color) for
+  all years, and `PATCH /items/{id}` likewise renames an item or changes its `unit` -
+  nothing converts already-stored quantities, so the frontend warns before doing that.
+  `PUT /items/{id}/entries/{YYYY-MM}` saves a month (`amount_huf`, whole forints,
+  negative for credits, an optional `quantity` for items with a unit, and an optional
+  `note` up to 500 characters; the item must be listed in that year) and `DELETE`
+  clears it; a month without an entry means "no data", not 0. `GET /items/{id}/series`
+  is the history across years with the price per unit, and `GET /summary` the latest
+  month, the change and a 12-month trend.
 - `WS /ws` - subscribe to device state changes. The server pushes a message
   on every update (from a `PATCH` or from the simulator); the client doesn't
   need to send anything.
@@ -109,6 +142,15 @@ Serves on http://localhost:8001. CORS is locked to `http://localhost:8000`
   the mock simulator and the weather refresher on startup).
 - `app/api/devices.py` - REST routes.
 - `app/api/weather.py`, `app/api/todos.py` - the weather and todo routes.
+- `app/api/costs.py` - the cost routes.
+- `app/costs/` - the costs domain on Postgres: `tables.py` (SQLAlchemy models),
+  `models.py` (Pydantic), `service.py` (queries and totals), `db.py` (engine,
+  sessions, running migrations at startup). The schema is versioned with Alembic in
+  `migrations/`; a new schema change = a new file in `migrations/versions/`. The
+  database itself is a Docker volume (`docker-compose.yml`, real spending) - back it
+  up with `pg_dump`, e.g. `docker exec homie-db pg_dump -U homie homie > backup.sql`.
+  `create_db_engine` also accepts a filesystem path instead of a URL, which creates a
+  throwaway SQLite database there - useful in tests, since it needs no server.
 - `app/config.py` - settings read from the gitignored `.env`, and the token
   cache path.
 - `app/todos/` - the Microsoft To Do domain: `models.py`, `auth.py` (sign-in
@@ -147,7 +189,7 @@ use, attribution required - the weather card shows it). Todos through the
 
 - Real device integrations (protocol deliberately undecided; additive via
   the registry, not a rewrite).
-- Persistence.
+- Persistence for devices (costs already use SQLite).
 - Auth. The API has none and the server only listens on this machine
   (`127.0.0.1`) by default. Before exposing it to the network (phone, tablet),
   add a PIN: the todo endpoints hand out your real Microsoft To Do data.

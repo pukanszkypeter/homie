@@ -18,6 +18,11 @@ class Settings(BaseSettings):
         env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
 
+    # Matches docker-compose.yml's defaults, so a fresh checkout works with no .env
+    # entry once `docker compose up -d` is running. Override if the Postgres this
+    # points at isn't the local dev one (e.g. the NAS later).
+    database_url: str = "postgresql+psycopg://homie:homie@localhost:5432/homie"
+
     ms_client_id: str = ""
     # Comma-separated names of the To Do lists to show. Empty means none: lists that
     # aren't named are never fetched, so private lists stay private.

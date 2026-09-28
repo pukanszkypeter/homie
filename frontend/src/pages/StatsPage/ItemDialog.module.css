@@ -1,0 +1,8 @@
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.chart {
+  height: 220px;
+}

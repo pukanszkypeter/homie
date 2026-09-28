@@ -20,17 +20,25 @@ browser (kiosk mode) mounted on a wall.
   Weather comes from Open-Meteo (free, no API key): the backend refreshes it
   every 15 minutes for the places in `backend/locations.json` and serves the
   cached result to every client.
+  Monthly household costs (utilities, subscriptions) live in a local Postgres
+  database (`docker-compose.yml`) behind `/api/costs`; totals are
+  computed on request, sections and items are listed per year, and items can carry a unit (kWh, m3) so the price per
+  unit can be charted.
 - `frontend/` - React + TypeScript + Vite. Fetches the device list once,
   then keeps it live over the WebSocket. Devices are grouped by room and
   rendered as cards with type-specific controls (on/off + brightness for
   lights, on/off for outlets, read-only for sensors). Home shows a greeting,
   clock and a weather card with a switch between the configured cities.
+  The Stats screen charts the monthly costs and is where they are entered.
 
 ## 🚀 Running it
 
-Two terminals:
+Postgres, then two terminals:
 
 ```bash
+# database (once, stays up between runs)
+docker compose up -d
+
 # backend (http://localhost:8001)
 cd backend
 source .venv/bin/activate   # venv already created; see below if missing
@@ -68,10 +76,9 @@ randomly every few seconds to simulate live data.
 - Real device integrations (protocol choice - MQTT/Zigbee/Home Assistant/
   vendor APIs - deliberately deferred; the registry abstraction is there so
   this is additive, not a rewrite).
-- More Microsoft Graph integrations (OneDrive files, budget/stats views) - the
-  To Do integration (`backend/app/todos/`) is the model for these.
 - Kiosk-mode styling/behavior for the tablet (fullscreen lockdown, disabling
   text selection, hiding the cursor, screen-always-on).
-- Persistence - device state resets to the seed data on backend restart.
+- Persistence for devices - device state resets to the seed data on backend restart
+  (costs are stored in SQLite).
 - Auth - there is none; fine for a LAN-only prototype, not fine once
   cloud service tokens are involved.

@@ -10,6 +10,7 @@ backend/**/__pycache__/
 .env
 backend/locations.json
 backend/.msal_token_cache.json
+backend/data/
 
 # frontend
 frontend/node_modules/

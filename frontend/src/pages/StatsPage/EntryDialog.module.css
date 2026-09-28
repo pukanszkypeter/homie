@@ -1,0 +1,5 @@
+/* A bit more room than the label+note pairs elsewhere: this is a calculated result,
+   not an explanation of the field right above it, so it reads better set apart. */
+.priceHint {
+  margin-top: var(--space-2);
+}

@@ -81,3 +81,78 @@ export interface TodosResponse {
   updated_at: string | null;
   lists: TodoList[];
 }
+
+export type CostColor =
+  "yellow" | "blue" | "coral" | "purple" | "green" | "orange" | "cyan" | "lime" | "pink";
+
+export interface CostItem {
+  id: number;
+  name: string;
+  unit: string | null;
+}
+
+export interface CostSection {
+  id: number;
+  name: string;
+  color: CostColor;
+  items: CostItem[];
+}
+
+export interface CostCell {
+  amount_huf: number | null; // null means a quantity was logged but the price isn't known yet
+  quantity: number | null;
+  unit_price: number | null;
+  note: string | null;
+}
+
+export interface CostItemYear extends CostItem {
+  months: (CostCell | null)[]; // January..December, null = no data
+  total_huf: number;
+}
+
+export interface CostSectionYear {
+  id: number;
+  name: string;
+  color: CostColor;
+  items: CostItemYear[];
+  month_totals: (number | null)[];
+  total_huf: number;
+}
+
+export interface CostYear {
+  year: number;
+  years: number[];
+  sections: CostSectionYear[];
+  month_totals: (number | null)[];
+  total_huf: number;
+}
+
+export interface CostSeriesPoint {
+  month: string; // "YYYY-MM"
+  amount_huf: number | null;
+  quantity: number | null;
+  unit_price: number | null;
+  note: string | null;
+}
+
+export interface CostItemSeries extends CostItem {
+  points: CostSeriesPoint[];
+}
+
+export interface CostMonthTotal {
+  month: string;
+  total_huf: number;
+}
+
+export interface CostSummary {
+  latest: CostMonthTotal | null;
+  previous: CostMonthTotal | null;
+  by_section: { name: string; total_huf: number }[];
+  trend: CostMonthTotal[];
+}
+
+export interface CostEntryInput {
+  amount_huf: number | null; // amount_huf and quantity can't both be null - nothing to save
+  quantity: number | null;
+  note: string | null;
+}

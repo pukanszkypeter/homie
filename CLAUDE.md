@@ -9,10 +9,12 @@ live in [README.md](README.md), [backend/README.md](backend/README.md) and
 
 ## 🚀 Run
 
-Two terminals (frontend on **8000**, backend on **8001**; CORS and the URLs in
-`frontend/src/api.ts` are tied to these):
+Postgres first (`docker-compose.yml`, once), then two terminals (frontend on
+**8000**, backend on **8001**; CORS and the URLs in `frontend/src/api.ts` are
+tied to these):
 
 ```bash
+docker compose up -d   # Postgres (data/schema persist in a Docker volume)
 cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8001
 cd frontend && npm run dev
 ```
@@ -46,6 +48,29 @@ cd frontend && npm run dev
   cleanup (`MS_TODO_CLEANUP_DAYS`, `app/todos/cleanup.py`), which reads only ids and
   completion times of all lists, never titles, and is off unless the user enables it.
   Never run it with `--delete` (or enable it) without the user's explicit go-ahead.
+- Costs: monthly utilities/subscription costs live in Postgres (`docker-compose.yml`,
+  a local container; real spending, never seeded with fixtures), managed by Alembic
+  migrations in `backend/migrations/` and entered through the Stats screen (no
+  spreadsheet import, on purpose). The connection URL is `DATABASE_URL` in `.env`
+  (defaults in `app/config.py` to the local `docker-compose.yml` instance, so a fresh
+  checkout needs no `.env` entry for it). Amounts are whole forints and may be negative
+  (credits); a missing entry means no data, not 0; totals are always computed, never
+  stored. An entry's amount can itself be missing (a metered item's quantity logged
+  before the bill arrives) - but amount and quantity are never both missing at once
+  (`EntryIn` rejects that), and a plain-count item (`unit = "1"`) always needs an
+  amount, since its quantity is just a fixed 1, not something actually measured.
+  Sections and items are listed per year (`cost_section_years` /
+  `cost_item_years`) but keep one identity across years, so removing one only affects
+  that year. Sections have a chart color (a key from `backend/app/costs/colors.py`,
+  mapped to `--color-chart-<key>` in `tokens.css` - keep both in sync, and re-run the
+  dataviz palette validator when changing the palette). Units (kWh, m3) belong to the
+  item; the quantity and an optional note (up to 500 characters) belong to the entry
+  (one month). Never write test data into the real database - use a temp SQLite
+  database (`create_db_engine(tmp_path)`, no server needed) or mocked responses, and
+  don't print the user's real cost figures or item names. The database was reset to
+  empty on 2026-09-28 (both the pre-Postgres SQLite copy and the live Postgres data
+  were deliberately deleted) - the user is re-entering everything through the Stats
+  screen from scratch.
 - Todos: Microsoft To Do is the source of truth (accessible everywhere, shared lists
   with other people); Homie is a wall view plus quick add/complete/delete, not a
   replacement. The backend caches open tasks only and validates list/task ids against
@@ -71,7 +96,7 @@ cd frontend && npm run dev
 ## ⚠️ Public repo - keep it clean
 
 The GitHub repo is **public** (used as a resume reference). Never commit real
-secrets or real personal data (tokens, actual budget numbers, real todo items).
+secrets or real personal data (tokens, actual cost figures, real todo items).
 Use synthetic data in the repo. Real credentials go in the gitignored `backend/.env`,
 never in code. Personal config follows the same rule: the weather
 places live in the gitignored `backend/locations.json` (home location is personal),
@@ -87,8 +112,8 @@ gitignored). Setup is in `backend/README.md`.
 
 - Lilly's brain: fully local model (Ollama/llama.cpp, matches the localhost ethos,
   weaker tool-calling) vs a cloud API (more reliable, leaves the LAN). Undecided.
-- No persistence yet (device state resets on restart) - SQLite is the likely fit
-  once budget/todo data exists.
+- Device state has no persistence yet (resets on restart); the costs data already
+  uses Postgres, so reuse that setup (`app/costs/db.py`, Alembic) when devices need it.
 - No general scheduler; background work is an asyncio task started in the lifespan
   (the mock simulator, and the weather refresher in `app/weather/service.py`).
   Follow that pattern until something needs real scheduling.

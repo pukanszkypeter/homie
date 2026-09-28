@@ -10,6 +10,20 @@
   --color-accent: #f5c518;
   --color-on-accent: #1a1d23;
   --color-danger: #ff6b6b;
+  --color-success: #5fd38d;
+
+  /* Colors a cost section can take in the charts (keys match backend/app/costs/colors.py).
+     Checked against the card surface: 3:1+ contrast, and neighbors in this order stay
+     distinguishable, including for color-blind viewers. */
+  --color-chart-yellow: #f5c518;
+  --color-chart-blue: #5aa9ff;
+  --color-chart-coral: #ff7a6b;
+  --color-chart-purple: #c08cf5;
+  --color-chart-green: #4fd1a5;
+  --color-chart-orange: #ff9f43;
+  --color-chart-cyan: #3fd0e8;
+  --color-chart-lime: #b5e061;
+  --color-chart-pink: #f472b6;
 
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-size-xs: 13px;
