@@ -1,11 +1,11 @@
-.toggle {
+.tabs {
   display: flex;
   padding: 2px;
   border-radius: var(--radius-pill);
   background: var(--color-bg);
 }
 
-.option {
+.tab {
   min-height: 40px;
   padding: 0 var(--space-3);
   border: 0;
@@ -21,10 +21,4 @@
 .selected {
   background: var(--color-surface-raised);
   color: var(--color-accent);
-}
-
-.option:disabled {
-  color: var(--color-text-muted);
-  opacity: 0.4;
-  cursor: not-allowed;
 }

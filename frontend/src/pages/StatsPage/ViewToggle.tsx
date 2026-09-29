@@ -5,6 +5,9 @@ export type CostView = "price" | "unit";
 interface Props {
   value: CostView;
   onChange: (view: CostView) => void;
+  // A count-unit item has no real quantity to switch to - Unit stays visible but unusable
+  // rather than disappearing, so it's clear why it's missing rather than just absent.
+  disableUnit?: boolean;
 }
 
 const OPTIONS: { value: CostView; label: string }[] = [
@@ -12,8 +15,8 @@ const OPTIONS: { value: CostView; label: string }[] = [
   { value: "unit", label: "Unit" },
 ];
 
-/** Switches a section's grid between showing cost (Ft) and quantity (the item's unit). */
-export function ViewToggle({ value, onChange }: Props) {
+/** Switches between showing cost (Ft) and quantity (the item's unit). */
+export function ViewToggle({ value, onChange, disableUnit }: Props) {
   return (
     <div role="radiogroup" aria-label="Show" className={styles.toggle}>
       {OPTIONS.map((option) => (
@@ -22,6 +25,7 @@ export function ViewToggle({ value, onChange }: Props) {
           type="button"
           role="radio"
           aria-checked={option.value === value}
+          disabled={option.value === "unit" && disableUnit}
           className={`${styles.option} ${option.value === value ? styles.selected : ""}`}
           onClick={() => onChange(option.value)}
         >

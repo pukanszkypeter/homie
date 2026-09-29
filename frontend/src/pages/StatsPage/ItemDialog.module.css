@@ -6,3 +6,39 @@
 .chart {
   height: 220px;
 }
+
+/* Tighter than Forms.module.css's .stack (var(--space-6)) - this tab is just Name, Unit and
+   Position, close enough together to read as one form rather than separate sections. */
+.detailsForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Looser than Forms.module.css's .group (var(--space-2)) - the fill amount and its action
+   buttons are two distinct steps, not a field and its inline note. */
+.fillGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* .detailsForm's gap is one fixed value for every pair, so the extra room before this block
+   (distinct from editing the fields above it) has to be added on top of that, not by raising
+   the shared gap itself - which then means restoring its own internal gap too (the confirm
+   caption and its buttons, or nothing at all when there's just the Save/Remove row). */
+.dialogActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Left-aligned, matching the caption/chart below it. Pulled in on both sides to trim some of
+   the dialog's own gap (var(--space-5)) around it, without changing that gap for every other
+   dialog that also uses it. */
+.historyHeader {
+  display: flex;
+  justify-content: flex-start;
+  margin-block: -8px;
+}

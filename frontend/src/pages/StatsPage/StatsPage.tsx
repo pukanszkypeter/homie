@@ -45,8 +45,6 @@ export function StatsPage() {
   const { data, knownYears, error, reload } = useCostYear(year);
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [openItem, setOpenItem] = useState<CostItem | null>(null);
-  // Which view (price/unit) the item was opened from, so its history chart matches it.
-  const [openItemView, setOpenItemView] = useState<CostView>("price");
   const [editingSection, setEditingSection] = useState<CostSectionYear | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [addingYear, setAddingYear] = useState(false);
@@ -99,6 +97,7 @@ export function StatsPage() {
     ? sections.find((s) => s.items.some((i) => i.id === openItem.id))
     : undefined;
   const itemIndex = itemSection?.items.findIndex((i) => i.id === openItem?.id) ?? -1;
+  const openItemYear = itemIndex >= 0 ? itemSection?.items[itemIndex] : undefined;
 
   const hasAmounts = data?.month_totals.some((total) => total !== null) ?? false;
   // Offered as suggestions when setting a unit, so "kWh" and "m³" stay spelled the same way
@@ -165,10 +164,7 @@ export function StatsPage() {
                 section={section}
                 year={year}
                 onEditCell={(item, monthIndex, view) => setEditing({ item, monthIndex, view })}
-                onOpenItem={(item, view) => {
-                  setOpenItem(item);
-                  setOpenItemView(view);
-                }}
+                onOpenItem={setOpenItem}
                 knownUnits={knownUnits}
                 onEdit={setEditingSection}
                 onRemove={(sectionId) => mutate(() => deleteCostSection(year, sectionId))}
@@ -229,13 +225,25 @@ export function StatsPage() {
         <ItemDialog
           item={openItem}
           year={year}
-          view={openItemView}
+          months={openItemYear?.months ?? []}
           knownUnits={knownUnits}
           canMoveUp={itemIndex > 0}
           canMoveDown={itemSection !== undefined && itemIndex < itemSection.items.length - 1}
           onMove={(direction) => mutate(() => moveCostItem(year, openItem.id, direction))}
           onSave={(changes: { name?: string; unit?: string | null }) =>
             closeAfter(() => setOpenItem(null))(() => updateCostItem(openItem.id, changes))
+          }
+          onFillYear={(amounts) =>
+            mutate(async () => {
+              for (let m = 0; m < 12; m++) {
+                const existing = openItemYear?.months[m] ?? null;
+                await saveCostEntry(openItem.id, monthKey(year, m), {
+                  amount_huf: amounts[m],
+                  quantity: existing?.quantity ?? null,
+                  note: existing?.note ?? null,
+                });
+              }
+            })
           }
           onDelete={() =>
             closeAfter(() => setOpenItem(null))(() => deleteCostItem(year, openItem.id))

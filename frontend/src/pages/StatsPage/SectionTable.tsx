@@ -13,7 +13,7 @@ interface Props {
   section: CostSectionYear;
   year: number;
   onEditCell: (item: CostItem, monthIndex: number, view: CostView) => void;
-  onOpenItem: (item: CostItem, view: CostView) => void;
+  onOpenItem: (item: CostItem) => void;
   knownUnits: string[];
   onAddItem: (sectionId: number, name: string, unit: string | null) => Promise<boolean>;
   onEdit: (section: CostSectionYear) => void;
@@ -24,30 +24,42 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => i);
 
 // "–" covers every "nothing to show" case in both views: no entry that month, an entry
 // with a price but no quantity, and (in price view) an entry with a quantity but no price
-// yet (a metered item's usage logged ahead of the bill). A count-unit item has no real
-// quantity concept, so in unit view it always reads a flat 1 per month instead.
+// yet (a metered item's usage logged ahead of the bill). A count-unit item reads 1 only for
+// a month it actually has an entry in - e.g. a subscription canceled mid-year should read
+// "–" for the months after that, not a phantom 1.
 function cellText(view: CostView, item: CostItemYear, cell: CostCell | null): string {
   if (view === "price") return cell?.amount_huf != null ? formatAmount(cell.amount_huf) : "–";
-  if (isCountUnit(item.unit)) return "1";
+  if (isCountUnit(item.unit)) return cell != null ? "1" : "–";
   return item.unit && cell?.quantity != null ? formatQuantityValue(cell.quantity) : "–";
 }
 
 // A row total across a single item's own months is meaningful (one unit, e.g. m³ of water
 // used this year). Summing across different items in the footer isn't - see footerText.
+// item.total_huf is 0 both when the months genuinely net to 0 and when there's no data at
+// all (the backend can't tell those apart in one int), so "any price this year" is checked
+// here instead, from the months themselves, which do keep that distinction.
 function itemTotalText(view: CostView, item: CostItemYear): string {
-  if (view === "price") return formatAmount(item.total_huf);
-  if (isCountUnit(item.unit)) return "12";
+  if (view === "price") {
+    const hasAnyPrice = item.months.some((c) => c?.amount_huf != null);
+    return hasAnyPrice ? formatAmount(item.total_huf) : "–";
+  }
+  if (isCountUnit(item.unit)) {
+    const enteredMonths = item.months.filter((c) => c != null).length;
+    return enteredMonths > 0 ? formatQuantityValue(enteredMonths) : "–";
+  }
   const quantities = item.months
     .map((c) => c?.quantity ?? null)
     .filter((q): q is number => q != null);
   return quantities.length > 0 ? formatQuantityValue(quantities.reduce((a, b) => a + b, 0)) : "–";
 }
 
-// The footer sums cost across every item in the section, which is fine in Ft but not in
-// unit view - items can have different (or no) units, so nothing is added up.
-function footerText(view: CostView, value: number | null): string {
+// The footer sums cost across every item in the section, which is fine in Ft - every item's
+// amount is the same currency. Quantity isn't: items can have different (or no) real units
+// (kWh, m³, a plain count), so a section-wide quantity total is never a meaningful number,
+// unlike each item's own row total (itemTotalText), which stays within that one item's unit.
+function footerText(view: CostView, priceValue: number | null): string {
   if (view === "unit") return "–";
-  return value === null ? "" : formatAmount(value);
+  return priceValue === null ? "–" : formatAmount(priceValue);
 }
 
 export function SectionTable({
@@ -131,7 +143,7 @@ export function SectionTable({
                     <button
                       type="button"
                       className={styles.itemButton}
-                      onClick={() => onOpenItem(item, view)}
+                      onClick={() => onOpenItem(item)}
                     >
                       {item.name}
                     </button>
@@ -173,7 +185,12 @@ export function SectionTable({
                   </td>
                 ))}
                 <td className={`${styles.sum} ${styles.totalCol}`}>
-                  {footerText(view, section.total_huf)}
+                  {/* section.total_huf is 0 both for "genuinely nets to 0" and "no data all
+                  year" - month_totals keeps that distinction, so it decides here instead. */}
+                  {footerText(
+                    view,
+                    section.month_totals.some((v) => v !== null) ? section.total_huf : null,
+                  )}
                 </td>
               </tr>
             </tfoot>
