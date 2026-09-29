@@ -9,6 +9,7 @@ backend/**/__pycache__/
 # secrets and personal config (never commit)
 .env
 backend/locations.json
+backend/tuya_devices.json
 backend/.msal_token_cache.json
 backend/data/
 

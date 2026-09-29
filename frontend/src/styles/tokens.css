@@ -11,6 +11,7 @@
   --color-on-accent: #1a1d23;
   --color-danger: #ff6b6b;
   --color-success: #5fd38d;
+  --color-warning: #f5a623;
 
   /* Colors a cost section can take in the charts (keys match backend/app/costs/colors.py).
      Checked against the card surface: 3:1+ contrast, and neighbors in this order stay

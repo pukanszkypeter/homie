@@ -1,0 +1,29 @@
+[
+  {
+    "id": "living-room-led",
+    "name": "Living Room LED Strip",
+    "room": "Living Room",
+    "type": "light",
+    "tuya_id": "eb1234567890abcdef1234",
+    "local_key": "1a2b3c4d5e6f7g8h",
+    "ip": "192.168.0.50",
+    "version": 3.3,
+    "dps": { "is_on": "20", "brightness": "22", "color_temp": "23" },
+    "brightness_range": { "min": 10, "max": 1000 },
+    "color_temp_range": { "min": 0, "max": 1000 },
+    "notes": {
+      "color_temp": "Example note - e.g. a brightness-only fixture whose color temp slider doesn't change the light physically."
+    }
+  },
+  {
+    "id": "bedroom-lamp",
+    "name": "Bedroom Lamp",
+    "room": "Bedroom",
+    "type": "light",
+    "tuya_id": "eb0987654321fedcba0987",
+    "local_key": "9z8y7x6w5v4u3t2s",
+    "ip": "192.168.0.51",
+    "version": 3.3,
+    "dps": { "is_on": "1" }
+  }
+]

@@ -1,16 +1,63 @@
+/* No bottom padding - .expandBar bleeds to the card's full width and sits flush against its
+   bottom edge, both only possible because the card itself isn't padding that edge away. */
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  min-height: 120px;
-  padding: var(--space-5);
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) 0;
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .name {
   color: var(--color-text-secondary);
   font-size: var(--font-size-md);
+  font-weight: 500;
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-around;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statIcon {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.statColorDot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.statLabel {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.statValue {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
@@ -21,19 +68,206 @@
   gap: var(--space-3);
 }
 
-.detail {
+/* Full-bleed and flush with the card's bottom edge (the negative margins cancel the card's
+   own side padding, which stops at 0 on the bottom edge for exactly this) - a bigger, more
+   obviously clickable target than a small corner arrow, and it doubles as the collapse
+   control once expanded rather than needing a second, differently-placed control for that. */
+.expandBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% + 2 * var(--space-4));
+  margin-inline: calc(-1 * var(--space-4));
+  padding-block: var(--space-2);
+  border: none;
+  border-top: 1px solid var(--color-surface-raised);
+  background: none;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  cursor: pointer;
 }
 
-.reading {
+.expandBar:hover {
+  background: var(--color-surface-raised);
+}
+
+.expandArrow {
+  transition: transform 0.15s ease;
+}
+
+.expandBar[aria-expanded="true"] .expandArrow {
+  transform: rotate(180deg);
+}
+
+.noteWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.noteIcon {
+  padding: 0;
+  margin-left: var(--space-1);
+  border: none;
+  background: none;
+  color: var(--color-warning);
+  font-size: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* position: fixed with its left/top set from JS (NoteHint.tsx), not pinned via CSS - a
+   CSS-only tooltip centered on its anchor icon runs off the edge of the viewport once that
+   icon sits near a narrow card's edge, and "don't overflow the viewport" can't be expressed
+   for an arbitrary anchor point in plain CSS. Visibility is also driven from JS (the `open`
+   state), not a :hover/:focus selector, since the same measurement pass needs to run first. */
+.noteTooltip {
+  position: fixed;
+  z-index: 100;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 2 * var(--space-2)));
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
   color: var(--color-text);
-  font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  text-align: left;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
-.slider {
+.sliderGroup {
   flex: 1;
-  min-width: 80px;
-  accent-color: var(--color-accent);
+  min-width: 200px;
+}
+
+.sliderLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* A native thumb's own default size varies by browser/OS, which is exactly what threw off
+   the label alignment below - fixed at a known 20px here so that inset can be matched
+   exactly instead of guessed. --fill (set inline from the current value) paints the "filled
+   up to here" look by hand, since a custom track pseudo-element drops the browser's own one.
+   --slider-accent (also inline, only set for color temp) lets the thumb/fill show the real
+   Kelvin-derived color for the current value instead of the fixed brand accent. */
+.slider {
+  width: 100%;
+  height: 24px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider:disabled {
+  cursor: default;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--slider-accent, var(--color-accent)) var(--fill, 0%),
+    var(--color-surface-raised) var(--fill, 0%)
+  );
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--slider-accent, var(--color-accent));
+}
+
+.slider:disabled::-webkit-slider-runnable-track {
+  background: var(--color-surface-raised);
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  background: var(--color-text-muted);
+}
+
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-raised);
+}
+
+.slider::-moz-range-progress {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--slider-accent, var(--color-accent));
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--slider-accent, var(--color-accent));
+}
+
+.slider:disabled::-moz-range-progress {
+  background: var(--color-surface-raised);
+}
+
+.slider:disabled::-moz-range-thumb {
+  background: var(--color-text-muted);
+}
+
+/* All 11 ticks are the same width, so distributing the gaps between them (space-between)
+   also puts them at the right positions - unlike the labels below, where "1"/"50"/"100"
+   are different widths and space-between would only equalize the gaps, not the centers.
+   No negative margin here - the 20px thumb is centered in the slider's 24px box (2px clear
+   above and below it), so ticks sitting right after it in normal flow already clear the
+   thumb's bottom edge without needing to be pulled up into it. */
+.sliderTicks {
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 10px;
+}
+
+.tick {
+  width: 2px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--color-text-muted);
+}
+
+/* Each label's own center is pinned exactly to the slider's real 0%/50%/100% positions
+   (10px is the thumb's radius, the same inset the track uses for its travel range) -
+   space-between can't do this once the three texts have different widths, since it only
+   equalizes the gaps between them, not where their centers actually land. */
+.sliderLabels {
+  position: relative;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.sliderLabels span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.sliderLabels span:first-child {
+  left: 10px;
+}
+
+.sliderLabels span:nth-child(2) {
+  left: 50%;
+}
+
+.sliderLabels span:last-child {
+  left: calc(100% - 10px);
 }

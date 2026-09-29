@@ -1,22 +1,13 @@
-export type DeviceType = "light" | "outlet" | "sensor";
+export type DeviceType = "light";
 
 export interface LightState {
   is_on: boolean;
   brightness: number;
+  // Not every light has a color-temp DP - absent (not just 0) means "no control to show".
+  color_temp?: number;
 }
 
-export interface OutletState {
-  is_on: boolean;
-  power_w: number;
-}
-
-export interface SensorState {
-  kind: "temperature" | "humidity";
-  value: number;
-  unit: string;
-}
-
-export type DeviceState = LightState | OutletState | SensorState;
+export type DeviceState = LightState;
 
 export interface Device {
   id: string;
@@ -24,6 +15,9 @@ export interface Device {
   room: string;
   type: DeviceType;
   state: DeviceState;
+  // Per-state-key caveats worth surfacing in the UI, e.g. a control that's real but has no
+  // physical effect on this particular fixture.
+  notes?: Record<string, string>;
 }
 
 export interface DeviceUpdateMessage {

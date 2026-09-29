@@ -11,8 +11,18 @@
   text-transform: uppercase;
 }
 
+/* Fixed-width columns (not minmax(...,1fr)) - 1fr let each card grow to soak up whatever
+   was left over in its row, so a card's width (and everything inside it, since the slider
+   is flex:1) kept shifting as the window resized, and a lone card alone in the last row
+   would stretch to the full row width instead of staying the same size as its siblings.
+   A fixed track just leaves unused space at the end of a row instead.
+
+   align-items defaults to stretch on a grid - without this, a collapsed card sits in the
+   same row as a taller expanded sibling and gets stretched to match its height, leaving
+   dead space below its (much shorter) actual content instead of just staying short. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, 280px);
+  align-items: start;
   gap: var(--space-4);
 }

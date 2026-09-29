@@ -14,8 +14,8 @@ from .api.weather import router as weather_router
 from .api.ws import router as ws_router
 from .config import TOKEN_CACHE_FILE, Settings
 from .costs.db import create_db_engine, migrate, session_factory
-from .devices.mock import run_simulator, seed_devices
 from .devices.registry import DeviceRegistry
+from .devices.tuya import build_devices, load_tuya_devices, run_tuya_poller
 from .todos.auth import TokenProvider
 from .todos.cleanup import run_todo_cleanup
 from .todos.client import GraphTodoClient
@@ -35,7 +35,11 @@ async def lifespan(app: FastAPI):
     app.state.db_sessions = session_factory(engine)
 
     registry = DeviceRegistry()
-    registry.seed(seed_devices())
+    tuya_configs = load_tuya_devices()
+    tuya_devices, tuya_drivers = build_devices(tuya_configs)
+    registry.seed(tuya_devices)
+    for device_id, driver in tuya_drivers.items():
+        registry.register_driver(device_id, driver)
     app.state.registry = registry
 
     weather = WeatherService(load_locations())
@@ -53,7 +57,9 @@ async def lifespan(app: FastAPI):
     todos = TodoService(todo_client)
     app.state.todos = todos
 
-    tasks = [asyncio.create_task(run_simulator(registry))]
+    tasks = []
+    if tuya_drivers:
+        tasks.append(asyncio.create_task(run_tuya_poller(registry, tuya_drivers)))
     if weather.locations:
         tasks.append(asyncio.create_task(run_weather_refresher(weather)))
     if todo_client:

@@ -1,28 +1,37 @@
 import type { LightState } from "@/types";
-import { ToggleButton } from "./ToggleButton";
-import styles from "./DeviceCard.module.css";
+import { colorTempPercentToRgb } from "@/utils/colorTemp";
+import { TickSlider } from "./TickSlider";
 
 interface Props {
   state: LightState;
-  onToggle: (value: boolean) => void;
+  notes?: Record<string, string>;
   onBrightness: (value: number) => void;
+  onColorTemp: (value: number) => void;
 }
 
-export function LightControls({ state, onToggle, onBrightness }: Props) {
+export function LightControls({ state, notes, onBrightness, onColorTemp }: Props) {
   return (
     <>
-      <ToggleButton isOn={state.is_on} onToggle={onToggle} />
-      <input
-        type="range"
-        className={styles.slider}
-        min={0}
-        max={100}
+      <TickSlider
         value={state.brightness}
+        zeroMeans={1}
         disabled={!state.is_on}
-        aria-label="Brightness"
-        onChange={(e) => onBrightness(Number(e.target.value))}
+        ariaLabel="Brightness"
+        label="Brightness"
+        onChange={onBrightness}
       />
-      <span className={styles.detail}>{state.brightness}%</span>
+      {state.color_temp !== undefined && (
+        <TickSlider
+          value={state.color_temp}
+          disabled={!state.is_on}
+          ariaLabel="Color temperature"
+          label="Color Temp"
+          endLabels={["Warm", "Neutral", "Cold"]}
+          colorFor={colorTempPercentToRgb}
+          onChange={onColorTemp}
+          note={notes?.color_temp}
+        />
+      )}
     </>
   );
 }

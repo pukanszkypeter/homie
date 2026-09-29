@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 
 from ..devices.models import Device, DeviceUpdate
-from ..devices.registry import InvalidStateKeyError, UnknownDeviceError
+from ..devices.registry import DeviceUnreachableError, InvalidStateKeyError, UnknownDeviceError
 
 router = APIRouter(prefix="/api/devices", tags=["devices"])
 
@@ -30,3 +30,5 @@ async def update_device(device_id: str, update: DeviceUpdate, request: Request) 
         raise HTTPException(status_code=404, detail=f"Unknown device: {device_id}") from None
     except InvalidStateKeyError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except DeviceUnreachableError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc

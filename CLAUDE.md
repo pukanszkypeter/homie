@@ -32,9 +32,14 @@ cd frontend && npm run dev
 
 ## 📐 Conventions
 
-- Device state goes through `backend/app/devices/registry.py`; anything that
-  drives a device (mock now, real hardware later) calls into it. Keep the API and
-  frontend unaware of where state comes from.
+- Device state goes through `backend/app/devices/registry.py`; anything that drives a
+  device (a real integration like `app/devices/tuya.py`, or a future mock for a type with
+  no hardware yet) calls into it. A device with no driver registered writes state directly;
+  one with a driver (`register_driver`) has its writes routed through it first, and the
+  registry stores whatever the hardware actually confirmed, not the raw request. Keep the
+  API and frontend unaware of which kind they're talking to. There's no seeded mock data
+  anymore (removed once the first real devices landed) - `registry.seed([])` if nothing's
+  configured yet.
 - New domains (todos, budget, voice) get their own router in `backend/app/api/`
   and their own module beside `devices/`.
 - `frontend/src/types.ts` mirrors the backend Pydantic models; update both together.
@@ -71,6 +76,27 @@ cd frontend && npm run dev
   empty on 2026-09-28 (both the pre-Postgres SQLite copy and the live Postgres data
   were deliberately deleted) - the user is re-entering everything through the Stats
   screen from scratch.
+- Tuya devices (LEDs, Ledvance Smart+ lamps - both controlled through the Tuya app) are
+  integrated locally, not through Tuya's cloud API or SmartThings' cloud-to-cloud bridge -
+  see `app/devices/tuya.py`. Each device's `device_id` and `local_key` are a one-time pull
+  from Tuya's IoT developer console (create a free project, "Link Tuya App Account" to scan
+  a QR code from the phone app, then read the values off the linked device); after that,
+  every read/write is a direct LAN call, no cloud involved. Devices are configured in the
+  gitignored `backend/tuya_devices.json` (copy `tuya_devices.example.json`), one entry per
+  device with a `dps` map from Homie's state keys (`is_on`, `brightness`, `color_temp`) to
+  that device's Tuya data-point indices - these vary by product (DP "1" is a near-universal
+  switch, but a bulb's brightness/color DPs depend on its category), so don't trust the
+  example file's numbers for a different device. A key whose DP uses a non-1-100 native
+  range (10-1000 is common) needs a matching `brightness_range`/`color_temp_range` in the
+  config so `TuyaDriver` can convert both ways - leave it unset for a DP that's already ~0-100.
+  Not every light has a `color_temp` DP; a Tuya "single_color" fixture (brightness-only, no
+  physical color-mixing hardware) still accepts and reports one if you add it, since the Tuya
+  app shows the same generic slider regardless of what the fixture can actually do - flag
+  that in the config's `notes` (surfaced in the UI next to the control) rather than omitting
+  the DP outright, which is a legitimate reason to write one. `set_multiple_values`/`status`
+  calls are blocking, so `TuyaDriver` runs them via `asyncio.to_thread` rather than in the
+  event loop. Samsung gear (TV, speakers, AC, all via SmartThings) is the deliberate
+  exception to LAN-only - see the open decisions below.
 - Todos: Microsoft To Do is the source of truth (accessible everywhere, shared lists
   with other people); Homie is a wall view plus quick add/complete/delete, not a
   replacement. The backend caches open tasks only and validates list/task ids against
@@ -114,9 +140,19 @@ gitignored). Setup is in `backend/README.md`.
   weaker tool-calling) vs a cloud API (more reliable, leaves the LAN). Undecided.
 - Device state has no persistence yet (resets on restart); the costs data already
   uses Postgres, so reuse that setup (`app/costs/db.py`, Alembic) when devices need it.
+  Matters less for a real device than a mock one, though - the hardware itself is the
+  source of truth, so persistence would mostly be about caching/history, not necessity.
+- Samsung devices (TV, speakers, AC) are planned to go through the SmartThings cloud API
+  (a Personal Access Token), one driver for all three rather than a local-only exception
+  just for the TV - deliberately breaking the LAN-only rule for this one vendor, since
+  the other two need SmartThings' cloud regardless and a second Samsung-specific local
+  protocol wouldn't avoid a cloud dependency, just duplicate one. Not built yet.
+- A home security/alarm app (Versa) was mentioned as a future integration target; holding
+  off - arm/disarm is safety-relevant enough that it deserves its own careful look (and
+  confirmed API research) before wiring up write access, more so than the other devices.
 - No general scheduler; background work is an asyncio task started in the lifespan
-  (the mock simulator, and the weather refresher in `app/weather/service.py`).
-  Follow that pattern until something needs real scheduling.
+  (`run_tuya_poller` in `app/devices/tuya.py`, and the weather refresher in
+  `app/weather/service.py`). Follow that pattern until something needs real scheduling.
 - No tests yet; add them when real logic lands (registry write validation,
   Graph/budget code).
 - No auth on the API, and it exposes the user's real todos. The server listens on
