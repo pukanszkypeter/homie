@@ -416,7 +416,7 @@ def item_series(session: Session, item_id: int) -> models.ItemSeries:
     )
 
 
-def summary(session: Session) -> models.SummaryResponse:
+def summary(session: Session, today: dt.date | None = None) -> models.SummaryResponse:
     # SUM ignores NULL amounts on its own, but a month/section whose entries are ALL
     # quantity-only (no price yet) sums to NULL overall, not 0 - skip those, same as a
     # month with no entries at all: no price data means no data.
@@ -425,8 +425,14 @@ def summary(session: Session) -> models.SummaryResponse:
         .group_by(CostEntry.month)
         .order_by(CostEntry.month)
     ).all()
+    # A known-fixed recurring cost (e.g. a subscription) can be filled months ahead of time,
+    # so "the latest month with any entry" can land in the future. Cap at the current month -
+    # the Home screen should show where things stand now, not a month that hasn't happened yet.
+    current_month = (today or dt.date.today()).replace(day=1)
     totals = [
-        models.MonthTotal(month=_month_key(m), total_huf=int(t)) for m, t in rows if t is not None
+        models.MonthTotal(month=_month_key(m), total_huf=int(t))
+        for m, t in rows
+        if t is not None and m <= current_month
     ]
     if not totals:
         return models.SummaryResponse(latest=None, previous=None, by_section=[], trend=[])
