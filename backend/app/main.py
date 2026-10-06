@@ -12,9 +12,15 @@ from .api.devices import router as devices_router
 from .api.todos import router as todos_router
 from .api.weather import router as weather_router
 from .api.ws import router as ws_router
-from .config import TOKEN_CACHE_FILE, Settings
+from .config import SMARTTHINGS_TOKEN_CACHE_FILE, TOKEN_CACHE_FILE, Settings
 from .costs.db import create_db_engine, migrate, session_factory
 from .devices.registry import DeviceRegistry
+from .devices.smartthings import (
+    build_devices as build_smartthings_devices,
+    load_smartthings_devices,
+    run_smartthings_poller,
+)
+from .devices.smartthings_auth import SmartThingsTokenProvider
 from .devices.tuya import build_devices, load_tuya_devices, run_tuya_poller
 from .todos.auth import TokenProvider
 from .todos.cleanup import run_todo_cleanup
@@ -37,8 +43,28 @@ async def lifespan(app: FastAPI):
     registry = DeviceRegistry()
     tuya_configs = load_tuya_devices()
     tuya_devices, tuya_drivers = build_devices(tuya_configs)
-    registry.seed(tuya_devices)
-    for device_id, driver in tuya_drivers.items():
+
+    smartthings_configured = bool(
+        settings.smartthings_client_id and settings.smartthings_client_secret
+    )
+    smartthings_configs = load_smartthings_devices() if smartthings_configured else []
+    smartthings_tokens = (
+        SmartThingsTokenProvider(
+            settings.smartthings_client_id,
+            settings.smartthings_client_secret,
+            SMARTTHINGS_TOKEN_CACHE_FILE,
+        )
+        if smartthings_configured
+        else None
+    )
+    smartthings_devices, smartthings_drivers, smartthings_http = (
+        build_smartthings_devices(smartthings_configs, smartthings_tokens)
+        if smartthings_configs
+        else ([], {}, None)
+    )
+
+    registry.seed(tuya_devices + smartthings_devices)
+    for device_id, driver in {**tuya_drivers, **smartthings_drivers}.items():
         registry.register_driver(device_id, driver)
     app.state.registry = registry
 
@@ -60,6 +86,8 @@ async def lifespan(app: FastAPI):
     tasks = []
     if tuya_drivers:
         tasks.append(asyncio.create_task(run_tuya_poller(registry, tuya_drivers)))
+    if smartthings_drivers:
+        tasks.append(asyncio.create_task(run_smartthings_poller(registry, smartthings_drivers)))
     if weather.locations:
         tasks.append(asyncio.create_task(run_weather_refresher(weather)))
     if todo_client:
@@ -73,6 +101,10 @@ async def lifespan(app: FastAPI):
         task.cancel()
     if todo_client:
         await todo_client.aclose()
+    if smartthings_http:
+        await smartthings_http.aclose()
+    if smartthings_tokens:
+        await smartthings_tokens.aclose()
     engine.dispose()
 
 

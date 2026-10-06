@@ -95,8 +95,30 @@ cd frontend && npm run dev
   that in the config's `notes` (surfaced in the UI next to the control) rather than omitting
   the DP outright, which is a legitimate reason to write one. `set_multiple_values`/`status`
   calls are blocking, so `TuyaDriver` runs them via `asyncio.to_thread` rather than in the
-  event loop. Samsung gear (TV, speakers, AC, all via SmartThings) is the deliberate
-  exception to LAN-only - see the open decisions below.
+  event loop. Samsung gear (AC done, TV/speaker not yet - see open decisions) is the
+  deliberate exception to LAN-only, via SmartThings' cloud API (`app/devices/smartthings.py`).
+  Auth is OAuth, not a Personal Access Token - PATs cap out at 24h with no way to extend (a
+  Dec 2024 Samsung policy change), which doesn't work for an unattended poller. One-time
+  setup: install the SmartThings CLI (`npm install -g @smartthings/cli`), `smartthings login`,
+  then `smartthings apps:create` -> OAuth-In app, `classifications: ["CONNECTED_SERVICE"]`
+  (not `AUTOMATION` - that's for SmartApps installed via the mobile app's routine flow, not a
+  plain OAuth client, and silently 403s on `/oauth/authorize` if you pick it by mistake).
+  Redirect URI **must be a real public HTTPS URL** - SmartThings' `/oauth/authorize` rejects
+  `localhost` outright (confirmed by SmartThings staff on their community forum, not a bug on
+  our end). `smartthings_login.py` uses `https://httpbin.org/get` for this, since it's only a
+  one-time code capture, not a real running service - open the printed authorize URL, approve,
+  then copy the `code` value out of httpbin's echoed JSON and paste it when the script asks.
+  Scopes: `r:devices:* x:devices:* r:locations:*` (`l:devices` is documentation-only cruft -
+  SmartThings staff confirmed on their forum it's unsupported and `r:devices:*` already covers
+  listing; registering it causes `/oauth/authorize` to fail with an opaque `server_error`).
+  No target URL needed (nothing
+  pushes to us - the poller only pulls). Put the resulting client id/secret in `.env` as
+  `SMARTTHINGS_CLIENT_ID`/`SMARTTHINGS_CLIENT_SECRET`, then sign in once:
+  `.venv/bin/python -m app.devices.smartthings_login`. After that, `SmartThingsTokenProvider`
+  refreshes itself indefinitely as long as it's used at least every 29 days - trivial, since
+  the poller runs continuously. Devices are configured the same shape as Tuya's, in the
+  gitignored `backend/smartthings_devices.json` (copy `smartthings_devices.example.json`) -
+  just `id`/`name`/`room`/`type`/`smartthings_id` (find the id via `GET /v1/devices`).
 - Todos: Microsoft To Do is the source of truth (accessible everywhere, shared lists
   with other people); Homie is a wall view plus quick add/complete/delete, not a
   replacement. The backend caches open tasks only and validates list/task ids against
@@ -130,9 +152,10 @@ with a committed `locations.example.json`. Never put the user's real home locati
 travel places in committed files, docs, or examples. The same goes for their real
 todo list names/tasks.
 
-Secrets live in `backend/.env` (read by `app/config.py`) and the Microsoft sign-in
-cache `backend/.msal_token_cache.json` (holds refresh tokens - a secret, owner-only,
-gitignored). Setup is in `backend/README.md`.
+Secrets live in `backend/.env` (read by `app/config.py`), the Microsoft sign-in cache
+`backend/.msal_token_cache.json`, and the SmartThings sign-in cache
+`backend/.smartthings_token_cache.json` (both hold refresh tokens - secrets, owner-only,
+gitignored). Todos setup is in `backend/README.md`; SmartThings setup is above.
 
 ## 🔜 Open decisions / known gaps
 
@@ -142,14 +165,18 @@ gitignored). Setup is in `backend/README.md`.
   uses Postgres, so reuse that setup (`app/costs/db.py`, Alembic) when devices need it.
   Matters less for a real device than a mock one, though - the hardware itself is the
   source of truth, so persistence would mostly be about caching/history, not necessity.
-- Samsung devices (TV, speakers, AC) are planned to go through the SmartThings cloud API
-  (a Personal Access Token), one driver for all three rather than a local-only exception
-  just for the TV - deliberately breaking the LAN-only rule for this one vendor, since
-  the other two need SmartThings' cloud regardless and a second Samsung-specific local
-  protocol wouldn't avoid a cloud dependency, just duplicate one. Not built yet.
-- A home security/alarm app (Versa) was mentioned as a future integration target; holding
-  off - arm/disarm is safety-relevant enough that it deserves its own careful look (and
-  confirmed API research) before wiring up write access, more so than the other devices.
+- AC and speaker are built (`app/devices/smartthings.py`). TVs are skipped on purpose - a real
+  capability check (not just assumed) found their input-source switching is basically useless
+  over this API (only the built-in tuner ever shows up, no HDMI ports), there's no working
+  ambient/light control on this hardware, and the user doesn't need Homie-driven TV switching
+  anyway (the remote already does that). The speaker only exposes power/volume/mute - its
+  input-source capability (`samsungvd.audioInputSource`) offers just a "next source" cycle
+  command, not a direct set, and that cycle command is a confirmed no-op on this hardware
+  (repeated live tests: ACCEPTED, zero state change) - so it's left out rather than built as a
+  button that does nothing. Also found mid-build: this speaker's SmartThings connection had
+  silently gone OFFLINE (health check, stale status for ~2 months) independent of the hardware
+  actually working - if a speaker/TV ever looks unresponsive from Homie, check
+  `GET /v1/devices/{id}/health` before assuming it's a Homie bug.
 - No general scheduler; background work is an asyncio task started in the lifespan
   (`run_tuya_poller` in `app/devices/tuya.py`, and the weather refresher in
   `app/weather/service.py`). Follow that pattern until something needs real scheduling.

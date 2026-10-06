@@ -1,0 +1,23 @@
+[
+  {
+    "id": "living-room-ac",
+    "name": "Living Room AC",
+    "room": "Living Room",
+    "type": "ac",
+    "smartthings_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+  },
+  {
+    "id": "bedroom-ac",
+    "name": "Bedroom AC",
+    "room": "Bedroom",
+    "type": "ac",
+    "smartthings_id": "11111111-2222-3333-4444-555555555555"
+  },
+  {
+    "id": "living-room-speaker",
+    "name": "Living Room Speaker",
+    "room": "Living Room",
+    "type": "speaker",
+    "smartthings_id": "66666666-7777-8888-9999-000000000000"
+  }
+]

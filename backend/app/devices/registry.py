@@ -76,17 +76,41 @@ class DeviceRegistry:
             try:
                 partial_state = await driver.apply(partial_state)
             except Exception as exc:
+                await self.set_online(device_id, False)
                 raise DeviceUnreachableError(f"{device_id}: {exc}") from exc
         return await self._apply_state(device_id, partial_state)
 
     async def set_full_state(self, device_id: str, partial_state: dict[str, Any]) -> Device:
-        """Apply a state update from the simulator/integration side (no key restrictions)."""
+        """Apply a state update from the simulator/integration side (no key restrictions) -
+        also marks the device online, since a state report only happens when it answered."""
         return await self._apply_state(device_id, partial_state)
+
+    async def set_online(self, device_id: str, online: bool) -> Device:
+        """Flag reachability. Going offline also forces is_on false - the failure mode this
+        matters for is the fixture's mains power being physically cut, not a brief wifi
+        hiccup, and a device with no power can't be lit regardless of what its last reading
+        said. The rest of `state` (brightness, color_temp) is left at its last-known values,
+        just marked stale via `online`, since those aren't contradicted by being unreachable
+        the way is_on is. A no-op (no broadcast) if already in that state, since a
+        still-offline device would otherwise rebroadcast the same thing every poll cycle."""
+        async with self._lock:
+            device = self.get(device_id)
+            if device.online == online:
+                return device
+            updates: dict[str, Any] = {"online": online}
+            if not online and "is_on" in device.state:
+                updates["state"] = {**device.state, "is_on": False}
+            updated = device.model_copy(update=updates)
+            self._devices[device_id] = updated
+        await self._broadcast(updated)
+        return updated
 
     async def _apply_state(self, device_id: str, partial_state: dict[str, Any]) -> Device:
         async with self._lock:
             device = self.get(device_id)
-            updated = device.model_copy(update={"state": {**device.state, **partial_state}})
+            updated = device.model_copy(
+                update={"state": {**device.state, **partial_state}, "online": True}
+            )
             self._devices[device_id] = updated
         await self._broadcast(updated)
         return updated

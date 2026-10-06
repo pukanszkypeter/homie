@@ -10,7 +10,9 @@ backend/**/__pycache__/
 .env
 backend/locations.json
 backend/tuya_devices.json
+backend/smartthings_devices.json
 backend/.msal_token_cache.json
+backend/.smartthings_token_cache.json
 backend/data/
 
 # frontend

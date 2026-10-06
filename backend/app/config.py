@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TOKEN_CACHE_FILE = BACKEND_DIR / ".msal_token_cache.json"
+SMARTTHINGS_TOKEN_CACHE_FILE = BACKEND_DIR / ".smartthings_token_cache.json"
 
 
 class Settings(BaseSettings):
@@ -22,6 +23,15 @@ class Settings(BaseSettings):
     # entry once `docker compose up -d` is running. Override if the Postgres this
     # points at isn't the local dev one (e.g. the NAS later).
     database_url: str = "postgresql+psycopg://homie:homie@localhost:5432/homie"
+
+    # OAuth client for the SmartThings cloud API - the LAN-only rule's deliberate exception
+    # for Samsung gear (AC, TV, speaker). A Personal Access Token was used at first, but
+    # those cap out at 24h with no way to extend (a Dec 2024 Samsung policy change), which
+    # doesn't work for an unattended poller - this is an OAuth-In app instead (one-time
+    # browser sign-in via `python -m app.devices.smartthings_login`, see backend/README.md),
+    # refreshed automatically after that. Empty disables the integration.
+    smartthings_client_id: str = ""
+    smartthings_client_secret: str = ""
 
     ms_client_id: str = ""
     # Comma-separated names of the To Do lists to show. Empty means none: lists that

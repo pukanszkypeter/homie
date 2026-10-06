@@ -24,6 +24,11 @@ logger = logging.getLogger(__name__)
 TUYA_DEVICES_FILE = Path(__file__).resolve().parents[2] / "tuya_devices.json"
 POLL_SECONDS = 30
 SOCKET_TIMEOUT_SECONDS = 5
+# tinytuya's own socket timeout doesn't reliably fire for every kind of hang (observed one
+# sitting well past it against a real flaky device) - this is a hard backstop above it, at
+# the asyncio level, so one stuck device can never block polling for every device after it
+# in the loop.
+READ_TIMEOUT_SECONDS = 8
 
 
 class RawRange(BaseModel):
@@ -106,11 +111,24 @@ class TuyaDriver:
 
     async def apply(self, partial_state: dict[str, Any]) -> dict[str, Any]:
         async with self._lock:
-            return await asyncio.to_thread(self._apply_sync, partial_state)
+            return await self._run_with_timeout(self._apply_sync, partial_state)
 
     async def read_state(self) -> dict[str, Any]:
         async with self._lock:
-            return await asyncio.to_thread(self._read_sync)
+            return await self._run_with_timeout(self._read_sync)
+
+    async def _run_with_timeout(self, fn: Any, *args: Any) -> dict[str, Any]:
+        # tinytuya's own socket timeout doesn't reliably fire for every kind of hang
+        # (observed one sitting well past it against a real flaky device) - this is a hard
+        # backstop at the asyncio level, so one stuck device can never block the poller loop
+        # for every device after it, or leave a client's PATCH request hanging forever.
+        # Note: this only stops *awaiting* the worker thread, not the thread itself (Python
+        # can't force-kill a blocked thread) - a very rare later collision with that zombie
+        # thread is an accepted tradeoff against the much more likely and severe alternative.
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(fn, *args), READ_TIMEOUT_SECONDS)
+        except TimeoutError as exc:
+            raise TuyaUnreachableError(f"timed out after {READ_TIMEOUT_SECONDS}s") from exc
 
     def _apply_sync(self, partial_state: dict[str, Any]) -> dict[str, Any]:
         dps = self._to_dps(partial_state)
@@ -187,24 +205,48 @@ def build_devices(configs: list[TuyaDeviceConfig]) -> tuple[list[Device], dict[s
     """Homie Device entries (state filled in once the poller's first pass completes) plus each
     device's driver, to hand to registry.register_driver after seeding."""
     devices = [
-        Device(id=c.id, name=c.name, room=c.room, type=c.type, state={}, notes=c.notes)
+        Device(
+            id=c.id,
+            name=c.name,
+            room=c.room,
+            type=c.type,
+            # color_temp seeded as null (not just absent) when the config declares it, so the
+            # frontend can tell "no color-temp DP on this fixture" (key missing) apart from
+            # "has one, just hasn't been read yet" (key present, value unknown) - otherwise a
+            # device that's never had a successful poll looks identical to one that simply
+            # doesn't support color temperature at all.
+            state={"color_temp": None} if "color_temp" in c.dps else {},
+            notes=c.notes,
+        )
         for c in configs
     ]
     drivers = {c.id: TuyaDriver(c) for c in configs}
     return devices, drivers
 
 
+async def _poll_one(registry: DeviceRegistry, device_id: str, driver: TuyaDriver) -> None:
+    try:
+        state = await driver.read_state()
+    except TuyaUnreachableError as exc:
+        logger.warning("Tuya device %s unreachable: %s", device_id, exc)
+        await registry.set_online(device_id, False)
+        return
+    await registry.set_full_state(device_id, state)
+
+
 async def run_tuya_poller(registry: DeviceRegistry, drivers: dict[str, TuyaDriver]) -> None:
     """Reads each real device's status and pushes it into the registry - catches changes made
     outside Homie (the Tuya app, a physical switch) and, since it polls immediately before its
     first sleep, gives newly-seeded devices their real state right away instead of the blank
-    one build_devices left them with."""
+    one build_devices left them with.
+
+    Devices are polled concurrently, not one at a time - each has its own driver, lock, and
+    LAN connection, so there's nothing to serialize across different devices (only within one,
+    which TuyaDriver's own lock already handles). Polling sequentially would mean one slow or
+    unreachable device (up to READ_TIMEOUT_SECONDS) delays every device after it in the list -
+    with enough devices, that risks a poll cycle taking longer than POLL_SECONDS itself."""
     while True:
-        for device_id, driver in drivers.items():
-            try:
-                state = await driver.read_state()
-            except TuyaUnreachableError as exc:
-                logger.warning("Tuya device %s unreachable: %s", device_id, exc)
-                continue
-            await registry.set_full_state(device_id, state)
+        await asyncio.gather(
+            *(_poll_one(registry, device_id, driver) for device_id, driver in drivers.items())
+        )
         await asyncio.sleep(POLL_SECONDS)

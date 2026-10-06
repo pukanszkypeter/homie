@@ -1,8 +1,8 @@
 # ⚙️ Homie backend
 
 FastAPI service that exposes smart-home devices over REST and pushes live
-state changes over a WebSocket. Devices are currently mocked - see
-[Mock devices](#mock-devices) below.
+state changes over a WebSocket. Devices are real hardware - see
+[Devices](#-devices) below.
 
 ## 🔧 Setup
 
@@ -93,7 +93,8 @@ Serves on http://localhost:8001. CORS is locked to `http://localhost:8000`
 - `PATCH /api/devices/{device_id}` - partial state update, e.g.
   `{"state": {"is_on": true}}`. Only keys listed in
   `WRITABLE_STATE_KEYS` (see [app/devices/models.py](app/devices/models.py))
-  are accepted per device type; sensors are read-only.
+  are accepted per device type. The write goes to the device first and the reply is
+  the state the hardware confirmed; an unreachable device answers `502`.
 - `GET /api/todos` - your Microsoft To Do lists with their open tasks (each with an
   optional `due_date` and an `is_recurring` flag), plus a
   `status` (`ok`, `loading`, `sign_in_required`, `not_configured`, `unavailable`).
@@ -133,13 +134,14 @@ Serves on http://localhost:8001. CORS is locked to `http://localhost:8000`
   is the history across years with the price per unit, and `GET /summary` the latest
   month, the change and a 12-month trend.
 - `WS /ws` - subscribe to device state changes. The server pushes a message
-  on every update (from a `PATCH` or from the simulator); the client doesn't
+  on every update (from a `PATCH` or from a poller); the client doesn't
   need to send anything.
 
 ## 🗂️ Structure
 
-- `app/main.py` - app setup, CORS, lifespan (seeds the registry, then starts
-  the mock simulator and the weather refresher on startup).
+- `app/main.py` - app setup, CORS, lifespan (seeds the registry with the configured
+  devices, registers their drivers, then starts the device pollers and the weather
+  refresher on startup).
 - `app/api/devices.py` - REST routes.
 - `app/api/weather.py`, `app/api/todos.py` - the weather and todo routes.
 - `app/api/costs.py` - the cost routes.
@@ -166,18 +168,25 @@ Serves on http://localhost:8001. CORS is locked to `http://localhost:8000`
   the per-type writable-state-key allowlist.
 - `app/devices/registry.py` - in-memory device store. This is the seam
   between the API and whatever actually drives a device: it handles reads,
-  validated writes, and fanning out updates to WebSocket subscribers. A
-  real integration (MQTT, Zigbee, Home Assistant, vendor APIs) would be
-  something else that calls into this registry, replacing
-  `devices/mock.py` - the API and frontend wouldn't need to change.
-- `app/devices/mock.py` - seeds the fake devices and jitters sensor/outlet
-  readings on a timer to simulate live activity.
+  validated writes, and fanning out updates to WebSocket subscribers. A device
+  with a registered driver has its writes routed through that driver, and the
+  registry stores what the hardware confirmed.
+- `app/devices/tuya.py` - lights, controlled directly on the LAN (no cloud):
+  config loading, the driver and its poller.
+- `app/devices/smartthings.py` - Samsung air conditioners and a soundbar through
+  the SmartThings cloud API: config loading, the driver (one command/status mapping
+  per device type) and its poller. `smartthings_auth.py` holds the OAuth token
+  cache and refresh, `smartthings_login.py` is the one-time sign-in command.
 
-## 🧪 Mock devices
+## 💡 Devices
 
-Living Room (light, outlet, temperature sensor), Bedroom (light, humidity
-sensor), Kitchen (outlet). State resets to the seed data on restart -
-there's no persistence yet.
+Configured in two gitignored files, each with a committed example to copy:
+`tuya_devices.json` and `smartthings_devices.json`. With neither present the API
+serves an empty device list. The one-time setup (a Tuya device's id and local key;
+the SmartThings OAuth app, its client id/secret in `.env` and
+`.venv/bin/python -m app.devices.smartthings_login`) is described in
+[../CLAUDE.md](../CLAUDE.md). State is not persisted - it is re-read from the
+hardware after a restart.
 
 ## 🙏 Data sources
 
@@ -187,9 +196,7 @@ use, attribution required - the weather card shows it). Todos through the
 
 ## 📋 Not built yet
 
-- Real device integrations (protocol deliberately undecided; additive via
-  the registry, not a rewrite).
-- Persistence for devices (costs already use SQLite).
+- Persistence for devices (costs already use Postgres).
 - Auth. The API has none and the server only listens on this machine
   (`127.0.0.1`) by default. Before exposing it to the network (phone, tablet),
   add a PIN: the todo endpoints hand out your real Microsoft To Do data.
