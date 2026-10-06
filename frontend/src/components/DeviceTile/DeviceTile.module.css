@@ -1,0 +1,132 @@
+.tile {
+  position: relative;
+  display: flex;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: transform 0.1s ease;
+}
+
+/* A hard edge at --tile-fill rather than a soft fade: the tile doubles as a level gauge
+   (brightness), and a visible line is what makes "about 60%" readable from across the room. */
+.tileOn {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--tile-tint) 30%, var(--color-surface)) var(--tile-fill),
+    color-mix(in srgb, var(--tile-tint) 10%, var(--color-surface)) var(--tile-fill)
+  );
+}
+
+.tileOffline {
+  opacity: 0.55;
+}
+
+.tile:has(.main:active:not(:disabled)) {
+  transform: scale(0.97);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 128px;
+  padding: var(--space-4);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.main:disabled {
+  cursor: default;
+}
+
+.icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon {
+  display: flex;
+  color: var(--color-text-muted);
+}
+
+.warningIcon {
+  color: var(--color-warning);
+}
+
+.tileOn .icon {
+  color: var(--tile-tint);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.name {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.tileOn .name {
+  color: var(--color-text);
+}
+
+.status {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.tileOn .status {
+  color: var(--color-text-secondary);
+}
+
+.detail {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* Sits on top of .main as a sibling, not inside it - a button can't nest in a button, and
+   the tile needs two separate actions (tap = toggle, this = open the controls). */
+.details {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.details:hover {
+  color: var(--color-text);
+}
+
+.sheetWarning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

@@ -1,24 +1,79 @@
-export type DeviceType = "light";
+export type DeviceType = "light" | "ac" | "speaker";
 
 export interface LightState {
   is_on: boolean;
   brightness: number;
-  // Not every light has a color-temp DP - absent (not just 0) means "no control to show".
-  color_temp?: number;
+  // Not every light has a color-temp DP - absent means "no control to show" (this light
+  // doesn't have one). null means it does, but hasn't been read yet (e.g. offline since
+  // before its first successful poll) - show the control, just without a value yet.
+  color_temp?: number | null;
 }
 
-export type DeviceState = LightState;
+export interface AcState {
+  is_on: boolean;
+  mode: string | null;
+  fan_mode: string | null;
+  target_temp: number | null;
+  swing_mode: string | null;
+  optional_mode: string | null;
+  auto_clean: boolean | null;
+  // Read-only - the unit's own sensor, not something the slider writes to.
+  current_temp: number | null;
+  // Read-only - null means this unit doesn't report filter wear at all, not "unknown".
+  filter_status: string | null;
+  filter_usage: number | null;
+  // Read-only - only meaningful (non-"ready") while a clean cycle is actually running.
+  auto_clean_state: string | null;
+  auto_clean_progress: number | null;
+  // Read-only - cumulative lifetime Wh off the unit's own meter.
+  energy_wh: number | null;
+  // The modes/speeds/etc this specific unit reports supporting, read from the device rather
+  // than assumed - null until the first successful poll.
+  available_modes: string[] | null;
+  available_fan_modes: string[] | null;
+  available_swing_modes: string[] | null;
+  available_optional_modes: string[] | null;
+}
 
-export interface Device {
+export interface SpeakerState {
+  is_on: boolean;
+  volume: number | null;
+  is_muted: boolean | null;
+}
+
+export type DeviceState = LightState | AcState | SpeakerState;
+
+interface DeviceBase {
   id: string;
   name: string;
   room: string;
-  type: DeviceType;
-  state: DeviceState;
   // Per-state-key caveats worth surfacing in the UI, e.g. a control that's real but has no
   // physical effect on this particular fixture.
   notes?: Record<string, string>;
+  // False when the last poll (or write attempt) couldn't reach the device - state is left at
+  // its last-known values, just flagged as stale, rather than cleared.
+  online: boolean;
 }
+
+// A discriminated union on `type` (rather than a flat `state: DeviceState`) so that checking
+// `device.type` narrows `device.state` to the matching shape - no `as LightState`/`as AcState`
+// casts needed at the call site.
+export interface LightDevice extends DeviceBase {
+  type: "light";
+  state: LightState;
+}
+
+export interface AcDevice extends DeviceBase {
+  type: "ac";
+  state: AcState;
+}
+
+export interface SpeakerDevice extends DeviceBase {
+  type: "speaker";
+  state: SpeakerState;
+}
+
+export type Device = LightDevice | AcDevice | SpeakerDevice;
 
 export interface DeviceUpdateMessage {
   type: "device_update";

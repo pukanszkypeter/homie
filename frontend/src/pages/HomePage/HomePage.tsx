@@ -1,6 +1,6 @@
 import { ChartColumn, CloudSun, Lightbulb, ListChecks } from "lucide-react";
-import { ComingSoon } from "@/components/ComingSoon/ComingSoon";
 import { CostWidget } from "@/components/CostWidget/CostWidget";
+import { DevicesWidget } from "@/components/DevicesWidget/DevicesWidget";
 import { TodoCard } from "@/components/TodoCard/TodoCard";
 import { WeatherCard } from "@/components/WeatherCard/WeatherCard";
 import { Widget } from "@/components/Widget/Widget";
@@ -16,7 +16,7 @@ export function HomePage() {
           <WeatherCard />
         </Widget>
         <Widget title="Devices" icon={Lightbulb} to="/devices">
-          <ComingSoon />
+          <DevicesWidget />
         </Widget>
         <Widget title="Todos" icon={ListChecks}>
           <TodoCard />

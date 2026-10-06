@@ -1,103 +1,3 @@
-/* No bottom padding - .expandBar bleeds to the card's full width and sits flush against its
-   bottom edge, both only possible because the card itself isn't padding that edge away. */
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-4) 0;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  overflow: hidden;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.name {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-md);
-  font-weight: 500;
-}
-
-.statsRow {
-  display: flex;
-  justify-content: space-around;
-}
-
-.statItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.statIcon {
-  font-size: var(--font-size-md);
-  color: var(--color-text-muted);
-  line-height: 1;
-}
-
-.statColorDot {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-}
-
-.statLabel {
-  display: flex;
-  align-items: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.statValue {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-}
-
-.body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-/* Full-bleed and flush with the card's bottom edge (the negative margins cancel the card's
-   own side padding, which stops at 0 on the bottom edge for exactly this) - a bigger, more
-   obviously clickable target than a small corner arrow, and it doubles as the collapse
-   control once expanded rather than needing a second, differently-placed control for that. */
-.expandBar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(100% + 2 * var(--space-4));
-  margin-inline: calc(-1 * var(--space-4));
-  padding-block: var(--space-2);
-  border: none;
-  border-top: 1px solid var(--color-surface-raised);
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.expandBar:hover {
-  background: var(--color-surface-raised);
-}
-
-.expandArrow {
-  transition: transform 0.15s ease;
-}
-
-.expandBar[aria-expanded="true"] .expandArrow {
-  transform: rotate(180deg);
-}
-
 .noteWrap {
   position: relative;
   display: inline-block;
@@ -136,17 +36,23 @@
 }
 
 .sliderGroup {
-  flex: 1;
-  min-width: 200px;
+  width: 100%;
 }
 
+/* Styled to match .controlRow's label/value pair - a slider is a row whose control sits on
+   its own line underneath, not a different kind of thing. */
 .sliderLabel {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.sliderLabel > span:last-child {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 /* A native thumb's own default size varies by browser/OS, which is exactly what threw off
@@ -270,4 +176,145 @@
 
 .sliderLabels span:last-child {
   left: calc(100% - 10px);
+}
+
+/* The dialog's building blocks: a group is one panel, a row is one setting inside it. Every
+   setting in every device dialog uses the same shape - label on the left, its control or
+   value on the right - so the three dialogs line up with each other. The panel is darker than
+   the dialog, not lighter: the controls themselves (selects, stepper buttons, the switch
+   track) are --color-surface-raised and would disappear on a raised panel. */
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.controlGroup > * + * {
+  border-top: 1px solid var(--color-surface);
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-1) var(--space-4);
+}
+
+/* A setting whose control needs the full width (a slider) instead of the right-hand slot. */
+.controlBlock {
+  padding: var(--space-3) var(--space-4);
+}
+
+.controlLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.controlValue {
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Smaller than a full 64px tap target on purpose - a +/- step is a lighter-weight action
+   than on/off, and at full size it outweighed the power button in the row above it. */
+.stepperButton {
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepperButton:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.stepperValue {
+  min-width: 5ch;
+  text-align: center;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+/* appearance: none drops the browser's own dropdown arrow (flush against the edge, with no
+   reliable way to space it via padding) in favor of a hand-drawn chevron placed with an actual
+   margin via background-position - the extra right padding keeps the selected text clear of it.
+   A fixed width so the selects in one dialog line up as a column whatever their current value. */
+.select {
+  appearance: none;
+  width: 168px;
+  min-height: 44px;
+  padding: 0 var(--space-6) 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239AA0A6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.select:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+/* The thumb's travel distance (22px) is track width - thumb diameter - both-side padding
+   (52 - 24 - 3 - 3), kept as separate numbers above rather than one magic transform value so
+   either can change without the other silently going out of sync. */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-raised);
+  cursor: pointer;
+}
+
+.switch:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.switchOn {
+  background: var(--color-accent);
+}
+
+.switchOn .switchThumb {
+  background: var(--color-on-accent);
+  transform: translateX(22px);
 }

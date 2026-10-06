@@ -35,6 +35,9 @@ interface Props {
   // that never fires on a touch screen, and this is a tablet-first UI) - e.g. a control
   // that's real and writable but has no physical effect on this particular fixture.
   note?: string;
+  // Shown in place of the number while the user isn't dragging - for a slider that stands
+  // for several devices that don't currently agree ("Mixed").
+  valueLabel?: string;
 }
 
 export function TickSlider({
@@ -47,6 +50,7 @@ export function TickSlider({
   endLabels,
   colorFor,
   note,
+  valueLabel,
 }: Props) {
   const ticksId = useId();
 
@@ -83,7 +87,7 @@ export function TickSlider({
           {label}
           {note && <NoteHint text={note} />}
         </span>
-        <span>{displayValue}%</span>
+        <span>{pending === null && valueLabel ? valueLabel : `${displayValue}%`}</span>
       </div>
       <input
         type="range"

@@ -46,16 +46,20 @@ one folder.
   content outlet. Switches to a bottom bar under 768px wide.
 - `src/components/` - reusable pieces: `NavRail` (rail on wide areas, bar on
   narrow ones; nav entries live in `navItems.ts`), `Widget` (Home card),
-  `PageHeader`, `ComingSoon`, `DeviceCard` (one file per control type) and
+  `PageHeader`, `DevicesWidget` (Home card: per floor, the temperature, one dot per lamp in
+  its own color, and what is on), `DeviceTile` (the compact tile on the Devices screen - tap
+  toggles, the corner button opens a dialog with the full controls; one tile file per device
+  type), `DeviceCard` (those per-type controls shown inside the dialog) and
   `ChipGroup` (the pill switcher used for cities and todo lists), `TodoCard`
   (Home widget), `TaskRow` (shows the due date, red when overdue, and a repeat
   icon for recurring tasks) and `TodoStatusMessage`, and
   `WeatherCard` (city switcher, current conditions, 3-day forecast; WMO weather
   codes are mapped to labels/icons in `weatherCodes.ts`), `Dialog` (modal shell used by the
-  Stats screen's popups) and `Combobox` (a text field with suggestions, keyboard-navigable,
+  Stats screen's popups and the device tiles) and `Combobox` (a text field with suggestions, keyboard-navigable,
   used for picking a cost item's unit - our own since `<datalist>` can't be restyled).
 - `src/pages/` - one folder per screen: `HomePage` (greeting, clock, widget
-  grid), `DevicesPage` (rooms and device cards), `TodosPage` (list switcher, add,
+  grid), `DevicesPage` (one section per floor: a summary header with the floor temperature and
+  an "Adjust lights" dialog that sets every lit lamp on the floor at once, then the device tiles), `TodosPage` (list switcher, add,
   complete, delete with confirmation) and `StatsPage` (yearly cost charts, grouped bars per section
   side by side rather than stacked, and a grid; each section switches independently between
   Price and Unit view (Unit shows quantity in the item's own unit, "-" where an item has no

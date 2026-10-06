@@ -22,6 +22,10 @@
   background: var(--color-surface);
 }
 
+.compact {
+  max-width: 420px;
+}
+
 .header {
   display: flex;
   align-items: center;

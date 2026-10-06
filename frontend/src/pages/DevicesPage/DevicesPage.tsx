@@ -1,20 +1,21 @@
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { useDevices } from "@/hooks/useDevices";
-import { RoomSection } from "./RoomSection";
+import { floorNames } from "@/utils/floorSummary";
+import { FloorSection } from "./FloorSection";
 
 export function DevicesPage() {
   const { devices, updateDevice } = useDevices();
 
-  const rooms = Array.from(new Set(devices.map((d) => d.room)));
+  const floors = floorNames(devices);
 
   return (
     <>
       <PageHeader title="Devices" />
-      {rooms.map((room) => (
-        <RoomSection
-          key={room}
-          name={room}
-          devices={devices.filter((d) => d.room === room)}
+      {floors.map((floor) => (
+        <FloorSection
+          key={floor}
+          name={floor}
+          devices={devices.filter((d) => d.room === floor)}
           onUpdate={updateDevice}
         />
       ))}
